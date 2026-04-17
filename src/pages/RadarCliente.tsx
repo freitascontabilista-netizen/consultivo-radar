@@ -56,7 +56,7 @@ export default function RadarCliente() {
         .from("interacoes")
         .select("*")
         .eq("cliente_id", clienteId)
-        .order("data", { ascending: false }),
+        .order("data_interacao", { ascending: false }),
       supabase
         .from("acoes_consultivas")
         .select("*")
