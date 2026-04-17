@@ -20,7 +20,7 @@ export function MetricCard({ label, value, tone = "default", loading }: MetricCa
   return (
     <Card className={cn("border-border/60 shadow-none transition-shadow hover:shadow-sm", t.bg)}>
       <CardContent className="p-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className={cn("flex items-center gap-2 text-sm font-bold", t.bg ? "text-white" : "text-muted-foreground")}>
           <span className={cn("h-2 w-2 rounded-full", t.dot)} />
           {label}
         </div>
