@@ -34,7 +34,9 @@ export interface InteracaoRow {
   resumo: string | null;
   proximo_passo?: string | null;
   data?: string | null;
+  data_interacao?: string | null;
   created_at?: string | null;
+  criado_em?: string | null;
   [key: string]: unknown;
 }
 
