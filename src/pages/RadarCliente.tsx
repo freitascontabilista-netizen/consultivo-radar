@@ -327,6 +327,15 @@ export default function RadarCliente() {
                               Retorno previsto: {formatDate(ac.data_retorno_prevista)}
                             </p>
                           )}
+                          <button
+                            onClick={async () => {
+                              await supabase.from("acoes_consultivas").update({ status: "concluida" }).eq("id", ac.id);
+                              load();
+                            }}
+                            className="mt-3 rounded-md border border-green-600 px-3 py-1 text-xs font-medium text-green-600 hover:bg-green-50 transition-colors"
+                          >
+                            Marcar como concluída
+                          </button>
                         </li>
                       );
                     })}
