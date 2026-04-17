@@ -270,7 +270,7 @@ export default function RadarCliente() {
       {/* FAB */}
       <Button
         onClick={() => setModalOpen(true)}
-        className="fixed bottom-6 right-6 z-20 h-14 gap-2 rounded-full bg-status-success px-6 text-white shadow-lg hover:bg-status-success/90"
+        className="fixed bottom-6 right-6 z-20 h-14 gap-2 rounded-full bg-green-600 px-6 text-white shadow-lg hover:bg-green-700"
       >
         <Plus className="h-5 w-5" />
         Registrar orientação
