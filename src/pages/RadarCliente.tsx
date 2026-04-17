@@ -47,8 +47,11 @@ export default function RadarCliente() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: c }, { data: i }, { data: a }] = await Promise.all([
-      supabase.from("radar_consultivo").select("*").eq("cliente_id", clienteId).maybeSingle(),
+    let cli = await supabase.from("radar_consultivo").select("*").eq("id", clienteId).maybeSingle();
+    if (cli.error || !cli.data) {
+      cli = await supabase.from("radar_consultivo").select("*").eq("cliente_id", clienteId).maybeSingle();
+    }
+    const [{ data: i }, { data: a }] = await Promise.all([
       supabase
         .from("interacoes")
         .select("*")
@@ -60,7 +63,7 @@ export default function RadarCliente() {
         .eq("cliente_id", clienteId)
         .in("status", ["aberta", "em_andamento"]),
     ]);
-    setCliente((c as RadarConsultivoRow) ?? null);
+    setCliente((cli.data as RadarConsultivoRow) ?? null);
     setInteracoes((i as InteracaoRow[]) ?? []);
     setAcoes((a as AcaoConsultivaRow[]) ?? []);
     setLoading(false);

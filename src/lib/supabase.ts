@@ -8,7 +8,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 export type SemaforoStatus = "verde" | "atencao" | "critico";
 
 export interface RadarConsultivoRow {
-  cliente_id: string | number;
+  id?: string | number;
+  cliente_id?: string | number;
   razao_social: string | null;
   nome_fantasia: string | null;
   segmento: string | null;
