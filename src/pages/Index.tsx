@@ -6,9 +6,10 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
+import { NovoClienteModal } from "@/components/NovoClienteModal";
 
 type Filter = "todos" | SemaforoStatus;
 
@@ -27,6 +28,8 @@ export default function Index() {
   const [filter, setFilter] = useState<Filter>("todos");
   const [search, setSearch] = useState("");
   const [user, setUser] = useState<string>("Usuário");
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -53,7 +56,7 @@ export default function Index() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const counts = useMemo(() => {
     const c = { total: rows.length, critico: 0, atencao: 0, verde: 0 };
@@ -128,14 +131,19 @@ export default function Index() {
               </Button>
             ))}
           </div>
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar cliente..."
-              className="pl-9"
-            />
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar cliente..."
+                className="pl-9"
+              />
+            </div>
+            <Button size="sm" onClick={() => setNovoOpen(true)} className="gap-1">
+              <Plus className="h-4 w-4" /> Novo Cliente
+            </Button>
           </div>
         </div>
 
@@ -220,6 +228,11 @@ export default function Index() {
           )}
         </Card>
       </main>
+      <NovoClienteModal
+        open={novoOpen}
+        onOpenChange={setNovoOpen}
+        onSaved={() => setReloadKey((k) => k + 1)}
+      />
     </div>
   );
 }
