@@ -39,7 +39,7 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
 
   const reset = () => {
     setTipo("consultiva");
-    setCanal("whatsapp");
+    setCanal("WhatsApp");
     setAssunto("");
     setResumo("");
     setProximoPasso("");
