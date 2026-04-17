@@ -98,11 +98,9 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
               <Select value={canal} onValueChange={setCanal}>
                 <SelectTrigger id="canal"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                  <SelectItem value="email">E-mail</SelectItem>
-                  <SelectItem value="telefone">Telefone</SelectItem>
-                  <SelectItem value="reuniao">Reunião</SelectItem>
-                  <SelectItem value="presencial">Presencial</SelectItem>
+                  <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                  <SelectItem value="E-mail">E-mail</SelectItem>
+                  <SelectItem value="Outro">Outro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
