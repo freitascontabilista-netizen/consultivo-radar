@@ -45,7 +45,7 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
     setProximoPasso("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   if (!assunto.trim()) {
     toast({ title: "Assunto obrigatório", variant: "destructive" });
