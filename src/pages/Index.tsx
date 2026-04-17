@@ -87,13 +87,7 @@ export default function Index() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <h1 className="text-base font-semibold tracking-tight sm:text-lg">CRM Consultivo</h1>
           <div className="flex items-center gap-4">
-            <div
-              className="hidden items-center font-bold tracking-tight sm:flex"
-              style={{ height: "36px", color: "#0A2647", fontSize: "22px", lineHeight: "36px" }}
-              aria-label="Logo do escritório"
-            >
-              Freitas Consultoria
-            </div>
+            <img src="/logo_freitas.png" alt="" style={{ height: "44px", objectFit: "contain" }} />
             <UserMenu />
           </div>
         </div>
