@@ -66,7 +66,10 @@ export default function Index() {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
       if (filter !== "todos" && r.semaforo !== filter) return false;
-      if (q && !String(r.cliente_nome ?? "").toLowerCase().includes(q)) return false;
+      if (q) {
+        const haystack = `${r.razao_social ?? ""} ${r.nome_fantasia ?? ""}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
       return true;
     });
   }, [rows, filter, search]);
@@ -157,13 +160,25 @@ export default function Index() {
                   key={String(r.cliente_id ?? idx)}
                   className="flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/40"
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">
-                      {r.cliente_nome ?? "Cliente sem nome"}
+                      {r.razao_social ?? "Cliente sem razão social"}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                      {r.dias_sem_orientacao ?? 0} dias sem orientação
-                    </p>
+                    {r.nome_fantasia ? (
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {r.nome_fantasia}
+                      </p>
+                    ) : null}
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      {r.segmento ? (
+                        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-medium text-foreground/70">
+                          {r.segmento}
+                        </span>
+                      ) : null}
+                      <span className="tabular-nums">
+                        {r.dias_sem_orientacao ?? 0} dias sem orientação
+                      </span>
+                    </div>
                   </div>
                   <StatusBadge status={r.semaforo} />
                 </li>

@@ -9,7 +9,9 @@ export type SemaforoStatus = "verde" | "atencao" | "critico";
 
 export interface RadarConsultivoRow {
   cliente_id: string | number;
-  cliente_nome: string;
+  razao_social: string | null;
+  nome_fantasia: string | null;
+  segmento: string | null;
   semaforo: SemaforoStatus;
   dias_sem_orientacao: number;
   [key: string]: unknown;
