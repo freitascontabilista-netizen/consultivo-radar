@@ -17,6 +17,7 @@ export interface RadarConsultivoRow {
   semaforo: SemaforoStatus;
   dias_sem_orientacao: number;
   ultima_orientacao?: string | null;
+  ultima_orientacao_consultiva?: string | null;
   total_orientacoes?: number | null;
   followups_pendentes?: number | null;
   [key: string]: unknown;
@@ -33,7 +34,9 @@ export interface InteracaoRow {
   resumo: string | null;
   proximo_passo?: string | null;
   data?: string | null;
+  data_interacao?: string | null;
   created_at?: string | null;
+  criado_em?: string | null;
   [key: string]: unknown;
 }
 

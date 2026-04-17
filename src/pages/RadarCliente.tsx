@@ -56,7 +56,7 @@ export default function RadarCliente() {
         .from("interacoes")
         .select("*")
         .eq("cliente_id", clienteId)
-        .order("data", { ascending: false }),
+        .order("data_interacao", { ascending: false }),
       supabase
         .from("acoes_consultivas")
         .select("*")
@@ -74,9 +74,9 @@ export default function RadarCliente() {
   }, [load]);
 
   const ultimaOrientacao = useMemo(() => {
-    if (cliente?.ultima_orientacao) return formatDate(cliente.ultima_orientacao);
+    if (cliente?.ultima_orientacao_consultiva) return formatDate(cliente.ultima_orientacao_consultiva);
     const consultiva = interacoes.find((x) => x.tipo === "consultiva");
-    return formatDate(consultiva?.data ?? consultiva?.created_at ?? null);
+    return formatDate(consultiva?.data_interacao ?? consultiva?.criado_em ?? null);
   }, [cliente, interacoes]);
 
   const totalOrientacoes =
@@ -189,7 +189,7 @@ export default function RadarCliente() {
                               {cfg.label}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {formatDate(it.data ?? it.created_at)}
+                              {formatDate(it.data_interacao ?? it.data ?? it.criado_em ?? it.created_at)}
                             </span>
                           </div>
                           <p className="mt-2 text-sm font-medium text-foreground">

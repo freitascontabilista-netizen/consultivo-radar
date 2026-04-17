@@ -59,7 +59,7 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
       assunto,
       resumo,
       proximo_passo: proximoPasso || null,
-      data: new Date().toISOString(),
+      data_interacao: new Date().toISOString(),
     });
     setSaving(false);
     if (error) {
