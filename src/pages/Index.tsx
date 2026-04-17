@@ -228,6 +228,11 @@ export default function Index() {
           )}
         </Card>
       </main>
+      <NovoClienteModal
+        open={novoOpen}
+        onOpenChange={setNovoOpen}
+        onSaved={() => setReloadKey((k) => k + 1)}
+      />
     </div>
   );
 }
