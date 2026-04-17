@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase, type RadarConsultivoRow, type SemaforoStatus } from "@/lib/supabase";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Search } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Filter = "todos" | SemaforoStatus;
@@ -186,7 +187,14 @@ export default function Index() {
                       </span>
                     </div>
                   </div>
-                  <StatusBadge status={r.semaforo} />
+                  <div className="flex items-center gap-3">
+                    <StatusBadge status={r.semaforo} />
+                    <Button asChild size="sm" variant="outline" className="gap-1">
+                      <Link to={`/radar/${r.cliente_id}`}>
+                        Ver radar <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
