@@ -32,7 +32,7 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [tipo, setTipo] = useState("consultiva");
-  const [canal, setCanal] = useState("whatsapp");
+  const [canal, setCanal] = useState("WhatsApp");
   const [assunto, setAssunto] = useState("");
   const [resumo, setResumo] = useState("");
   const [proximoPasso, setProximoPasso] = useState("");
