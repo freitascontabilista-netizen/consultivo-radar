@@ -6,9 +6,10 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
+import { NovoClienteModal } from "@/components/NovoClienteModal";
 
 type Filter = "todos" | SemaforoStatus;
 
