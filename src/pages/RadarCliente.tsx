@@ -74,9 +74,9 @@ export default function RadarCliente() {
   }, [load]);
 
   const ultimaOrientacao = useMemo(() => {
-    if (cliente?.ultima_orientacao) return formatDate(cliente.ultima_orientacao);
+    if (cliente?.ultima_orientacao_consultiva) return formatDate(cliente.ultima_orientacao_consultiva);
     const consultiva = interacoes.find((x) => x.tipo === "consultiva");
-    return formatDate(consultiva?.data ?? consultiva?.created_at ?? null);
+    return formatDate(consultiva?.data_interacao ?? consultiva?.criado_em ?? null);
   }, [cliente, interacoes]);
 
   const totalOrientacoes =
