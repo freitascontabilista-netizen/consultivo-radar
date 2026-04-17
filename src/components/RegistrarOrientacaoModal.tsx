@@ -73,7 +73,7 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
       const { error: acaoError } = await supabase.from("acoes_consultivas").insert({
         cliente_id: clienteId,
         tema: assunto,
-problema_identificado: resumo || assunto,
+        problema_identificado: resumo || assunto,
         acao_recomendada: proximoPasso,
         status: "aberta",
         urgencia: "media",
