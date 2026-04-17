@@ -76,7 +76,7 @@ export default function Auth() {
             className="font-bold tracking-tight"
             style={{ color: "#0A2647", fontSize: "26px" }}
           >
-            Freitas Consultoria Contábil e Financeira
+            Freitas Consultoria
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">CRM Consultivo</p>
         </header>
