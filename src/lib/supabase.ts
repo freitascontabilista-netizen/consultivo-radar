@@ -12,7 +12,42 @@ export interface RadarConsultivoRow {
   razao_social: string | null;
   nome_fantasia: string | null;
   segmento: string | null;
+  regime_tributario?: string | null;
   semaforo: SemaforoStatus;
   dias_sem_orientacao: number;
+  ultima_orientacao?: string | null;
+  total_orientacoes?: number | null;
+  followups_pendentes?: number | null;
+  [key: string]: unknown;
+}
+
+export type InteracaoTipo = "consultiva" | "suporte" | "relacionamento" | "comercial";
+
+export interface InteracaoRow {
+  id: string | number;
+  cliente_id: string | number;
+  tipo: InteracaoTipo | string;
+  canal?: string | null;
+  assunto: string | null;
+  resumo: string | null;
+  proximo_passo?: string | null;
+  data?: string | null;
+  created_at?: string | null;
+  [key: string]: unknown;
+}
+
+export type AcaoStatus = "aberta" | "em_andamento" | "concluida" | "cancelada";
+export type AcaoUrgencia = "baixa" | "media" | "alta" | "critica";
+
+export interface AcaoConsultivaRow {
+  id: string | number;
+  cliente_id: string | number;
+  tema: string | null;
+  problema_identificado: string | null;
+  acao_recomendada: string | null;
+  urgencia: AcaoUrgencia | string | null;
+  status: AcaoStatus | string;
+  data_retorno_prevista?: string | null;
+  created_at?: string | null;
   [key: string]: unknown;
 }
