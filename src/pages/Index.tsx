@@ -28,6 +28,8 @@ export default function Index() {
   const [filter, setFilter] = useState<Filter>("todos");
   const [search, setSearch] = useState("");
   const [user, setUser] = useState<string>("Usuário");
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
