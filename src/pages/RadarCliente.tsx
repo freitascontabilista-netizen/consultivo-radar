@@ -189,7 +189,7 @@ export default function RadarCliente() {
                               {cfg.label}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {formatDate(it.data ?? it.created_at)}
+                              {formatDate(it.data_interacao ?? it.data ?? it.criado_em ?? it.created_at)}
                             </span>
                           </div>
                           <p className="mt-2 text-sm font-medium text-foreground">
