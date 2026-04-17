@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UserMenu } from "@/components/UserMenu";
 
 const tipoConfig: Record<string, { label: string; classes: string }> = {
   consultiva: { label: "Consultiva", classes: "bg-status-success-soft text-status-success" },
@@ -94,11 +95,14 @@ export default function RadarCliente() {
           >
             <ArrowLeft className="h-4 w-4" /> Voltar ao dashboard
           </Link>
-          <div
-            className="flex items-center font-bold tracking-tight"
-            style={{ height: "36px", color: "#0A2647", fontSize: "22px", lineHeight: "36px" }}
-          >
-            Freitas Consultoria
+          <div className="flex items-center gap-4">
+            <div
+              className="hidden items-center font-bold tracking-tight sm:flex"
+              style={{ height: "36px", color: "#0A2647", fontSize: "22px", lineHeight: "36px" }}
+            >
+              Freitas Consultoria
+            </div>
+            <UserMenu />
           </div>
         </div>
       </header>
