@@ -72,7 +72,7 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <header className="mb-6 text-center">
-          <img src="/logo_freitas.png" alt="" style={{ height: "60px", objectFit: "contain" }} />
+         <img src="/logo_freitas.png" alt="" style={{ height: "60px", objectFit: "contain", margin: "0 auto", display: "block" }} />
           <p className="mt-1 text-sm text-muted-foreground">CRM Consultivo</p>
         </header>
 
