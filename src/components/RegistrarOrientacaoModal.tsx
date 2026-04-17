@@ -46,11 +46,51 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!assunto.trim()) {
-      toast({ title: "Assunto obrigatório", variant: "destructive" });
+  e.preventDefault();
+  if (!assunto.trim()) {
+    toast({ title: "Assunto obrigatório", variant: "destructive" });
+    return;
+  }
+  setSaving(true);
+
+  const { error } = await supabase.from("interacoes").insert({
+    cliente_id: clienteId,
+    tipo,
+    canal,
+    assunto,
+    resumo,
+    proximo_passo: proximoPasso || null,
+    data_interacao: new Date().toISOString(),
+  });
+
+  if (error) {
+    setSaving(false);
+    toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    return;
+  }
+
+  if (tipo === "consultiva" && proximoPasso.trim()) {
+    const { error: acaoError } = await supabase.from("acoes_consultivas").insert({
+      cliente_id: clienteId,
+      tema: assunto,
+      acao_recomendada: proximoPasso,
+      status: "aberta",
+      urgencia: "media",
+    });
+
+    if (acaoError) {
+      setSaving(false);
+      toast({ title: "Erro ao criar ação consultiva", description: acaoError.message, variant: "destructive" });
       return;
     }
+  }
+
+  setSaving(false);
+  toast({ title: "Orientação registrada com sucesso" });
+  reset();
+  onOpenChange(false);
+  onSaved?.();
+};
     setSaving(true);
     const { error } = await supabase.from("interacoes").insert({
       cliente_id: clienteId,
