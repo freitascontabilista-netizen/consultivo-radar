@@ -56,7 +56,7 @@ export default function Index() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const counts = useMemo(() => {
     const c = { total: rows.length, critico: 0, atencao: 0, verde: 0 };
