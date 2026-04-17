@@ -19,6 +19,7 @@ const filterLabels: Record<Filter, string> = {
 };
 
 export default function Index() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<RadarConsultivoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -162,41 +163,55 @@ export default function Index() {
             </div>
           ) : (
             <ul className="divide-y divide-border/60">
-              {filtered.map((r, idx) => (
-                <li
-                  key={String(r.cliente_id ?? idx)}
-                  className="flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/40"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {r.razao_social ?? "Cliente sem razão social"}
-                    </p>
-                    {r.nome_fantasia ? (
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {r.nome_fantasia}
+              {filtered.map((r, idx) => {
+                const targetId = r.id ?? r.cliente_id;
+                const goRadar = () => targetId != null && navigate(`/radar/${targetId}`);
+                return (
+                  <li
+                    key={String(targetId ?? idx)}
+                    onClick={goRadar}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goRadar()}
+                    className="flex cursor-pointer items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/40"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {r.razao_social ?? "Cliente sem razão social"}
                       </p>
-                    ) : null}
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                      {r.segmento ? (
-                        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-medium text-foreground/70">
-                          {r.segmento}
-                        </span>
+                      {r.nome_fantasia ? (
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          {r.nome_fantasia}
+                        </p>
                       ) : null}
-                      <span className="tabular-nums">
-                        {r.dias_sem_orientacao ?? 0} dias sem orientação
-                      </span>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        {r.segmento ? (
+                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-medium text-foreground/70">
+                            {r.segmento}
+                          </span>
+                        ) : null}
+                        <span className="tabular-nums">
+                          {r.dias_sem_orientacao ?? 0} dias sem orientação
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={r.semaforo} />
-                    <Button asChild size="sm" variant="outline" className="gap-1">
-                      <Link to={`/radar/${r.cliente_id}`}>
+                    <div className="flex items-center gap-3">
+                      <StatusBadge status={r.semaforo} />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          goRadar();
+                        }}
+                      >
                         Ver radar <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
-                    </Button>
-                  </div>
-                </li>
-              ))}
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Card>
