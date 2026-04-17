@@ -186,7 +186,7 @@ export default function RadarCliente() {
                   </h1>
                   <button
                     onClick={openEdit}
-                    className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-md bg-blue-900 px-2 py-1 text-xs text-white hover:bg-blue-800 transition-colors"
                   >
                     <Pencil className="h-3 w-3" /> Editar cadastro
                   </button>
