@@ -32,14 +32,14 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [tipo, setTipo] = useState("consultiva");
-  const [canal, setCanal] = useState("whatsapp");
+  const [canal, setCanal] = useState("WhatsApp");
   const [assunto, setAssunto] = useState("");
   const [resumo, setResumo] = useState("");
   const [proximoPasso, setProximoPasso] = useState("");
 
   const reset = () => {
     setTipo("consultiva");
-    setCanal("whatsapp");
+    setCanal("WhatsApp");
     setAssunto("");
     setResumo("");
     setProximoPasso("");
@@ -98,11 +98,9 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
               <Select value={canal} onValueChange={setCanal}>
                 <SelectTrigger id="canal"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                  <SelectItem value="email">E-mail</SelectItem>
-                  <SelectItem value="telefone">Telefone</SelectItem>
-                  <SelectItem value="reuniao">Reunião</SelectItem>
-                  <SelectItem value="presencial">Presencial</SelectItem>
+                  <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                  <SelectItem value="E-mail">E-mail</SelectItem>
+                  <SelectItem value="Outro">Outro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
