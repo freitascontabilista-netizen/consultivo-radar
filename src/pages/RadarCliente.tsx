@@ -48,6 +48,7 @@ interface EditForm {
   frequencia_contato_dias: number;
   dores_mapeadas: string;
   objetivos_empresario: string;
+  observacoes: string;
 }
 
 export default function RadarCliente() {
