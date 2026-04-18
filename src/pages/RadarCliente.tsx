@@ -32,7 +32,7 @@ const urgenciaConfig: Record<string, { label: string; classes: string }> = {
 function formatDate(value?: string | null) {
   if (!value) return "—";
   try {
-    return new Date(value).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+    return new Date(value).toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   } catch {
     return value;
   }
