@@ -210,6 +210,12 @@ export default function RadarCliente() {
                     </span>
                   )}
                 </div>
+                {(cliente as any).observacoes && (
+                <div style={{background: '#fffbeb', border: '1.5px solid #fcd34d', borderRadius: '8px', padding: '12px 16px', marginTop: '12px'}}>
+                  <div style={{fontSize: '11px', fontWeight: 500, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px'}}>Particularidades gerais da empresa</div>
+                  <div style={{fontSize: '13px', color: '#78350f', lineHeight: '1.6'}}>{(cliente as any).observacoes}</div>
+                </div>
+              )}
               </div>
               <div className="rounded-lg border border-border/60 bg-card px-5 py-3 text-right">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
