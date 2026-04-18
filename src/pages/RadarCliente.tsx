@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 
 const tipoConfig: Record<string, { label: string; classes: string }> = {
-  consultiva: { label: "Consultiva", classes: "bg-green-100 text-green-700" },
+  consultiva: { label: "Consultiva", classes: "bg-green-100 text-green-700 !bg-[#dcfce7] !text-[#16a34a]" },
   suporte: { label: "Suporte", classes: "bg-muted text-foreground/70" },
   relacionamento: { label: "Relacionamento", classes: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300" },
   comercial: { label: "Comercial", classes: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300" },
