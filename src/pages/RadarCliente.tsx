@@ -252,14 +252,6 @@ export default function RadarCliente() {
 
             {/* Timeline */}
             <section className="mt-10">
-              {(cliente as any).observacoes && (
-              <section className="mt-6">
-                <Card className="border-border/60 shadow-none p-5 bg-yellow-50">
-                  <h2 className="text-sm font-semibold text-yellow-800 mb-2">⚠️ Observações / Particularidades</h2>
-                  <p className="text-sm text-yellow-900 whitespace-pre-wrap">{(cliente as any).observacoes}</p>
-                </Card>
-              </section>
-            )}
               <h2 className="mb-3 text-lg font-semibold tracking-tight">Timeline de interações</h2>
               <Card className="overflow-hidden border-border/60 shadow-none">
                 {interacoes.length === 0 ? (
