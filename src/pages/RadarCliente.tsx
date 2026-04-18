@@ -69,6 +69,7 @@ export default function RadarCliente() {
     frequencia_contato_dias: 30,
     dores_mapeadas: "",
     objetivos_empresario: "",
+    observacoes: "",
   });
 
   const load = useCallback(async () => {
@@ -111,6 +112,7 @@ export default function RadarCliente() {
       frequencia_contato_dias: (cliente as any).frequencia_contato_dias ?? 30,
       dores_mapeadas: (cliente as any).dores_mapeadas ?? "",
       objetivos_empresario: (cliente as any).objetivos_empresario ?? "",
+      observacoes: (cliente as any).observacoes ?? "",
     });
     setEditOpen(true);
   };
@@ -128,6 +130,7 @@ export default function RadarCliente() {
       frequencia_contato_dias: editForm.frequencia_contato_dias,
       dores_mapeadas: editForm.dores_mapeadas || null,
       objetivos_empresario: editForm.objetivos_empresario || null,
+      observacoes: editForm.observacoes || null,
     }).eq("id", realId);
     setSaving(false);
     setEditOpen(false);
@@ -242,6 +245,14 @@ export default function RadarCliente() {
 
             {/* Timeline */}
             <section className="mt-10">
+              {(cliente as any).observacoes && (
+              <section className="mt-6">
+                <Card className="border-border/60 shadow-none p-5 bg-yellow-50">
+                  <h2 className="text-sm font-semibold text-yellow-800 mb-2">⚠️ Observações / Particularidades</h2>
+                  <p className="text-sm text-yellow-900 whitespace-pre-wrap">{(cliente as any).observacoes}</p>
+                </Card>
+              </section>
+            )}
               <h2 className="mb-3 text-lg font-semibold tracking-tight">Timeline de interações</h2>
               <Card className="overflow-hidden border-border/60 shadow-none">
                 {interacoes.length === 0 ? (
@@ -442,6 +453,11 @@ export default function RadarCliente() {
                 <label className={labelClass}>Objetivos do empresário</label>
                 <textarea rows={3} className={inputClass} value={editForm.objetivos_empresario}
                   onChange={e => setEditForm(f => ({ ...f, objetivos_empresario: e.target.value }))} />
+              </div>
+              <div>
+                <label className={labelClass}>Observações / Particularidades</label>
+                <textarea rows={4} className={inputClass} value={editForm.observacoes}
+                  onChange={e => setEditForm(f => ({ ...f, observacoes: e.target.value }))} />
               </div>
             </div>
             <div className="flex justify-end gap-3 border-t px-6 py-4">
