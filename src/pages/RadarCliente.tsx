@@ -120,7 +120,7 @@ export default function RadarCliente() {
 
   const saveEdit = async () => {
     setSaving(true);
-    const realId = (cliente as any)?.id ?? clienteId;
+    const realId = (cliente as any)?.cliente_id ?? (cliente as any)?.id ?? clienteId;
     await supabase.from("clientes").update({
       razao_social: editForm.razao_social,
       nome_fantasia: editForm.nome_fantasia || null,
