@@ -61,6 +61,8 @@ export default function RadarCliente() {
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const ITENS_POR_PAGINA = 5;
   const [editForm, setEditForm] = useState<EditForm>({
     razao_social: "",
     nome_fantasia: "",
@@ -157,6 +159,12 @@ export default function RadarCliente() {
     cliente?.total_orientacoes ?? interacoes.filter((x) => x.tipo === "consultiva").length;
   const followups = cliente?.followups_pendentes ?? acoes.length;
   const dias = cliente?.dias_sem_orientacao ?? 0;
+
+  const totalPaginas = Math.ceil(interacoes.length / ITENS_POR_PAGINA);
+  const interacoesPaginadas = interacoes.slice(
+    (paginaAtual - 1) * ITENS_POR_PAGINA,
+    paginaAtual * ITENS_POR_PAGINA
+  );
 
   const inputClass = "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
   const labelClass = "block text-xs font-medium text-gray-600 mb-1";
@@ -269,18 +277,13 @@ export default function RadarCliente() {
                   </div>
                 ) : (
                   <ul className="divide-y divide-border/60">
-                    {interacoes.map((it) => {
+                    {interacoesPaginadas.map((it) => {
                       const cfg = tipoConfig[it.tipo as string] ?? tipoConfig.suporte;
                       return (
-                        <li key={String(it.id)} className="p-5 group">
+                        <li key={String(it.id)} className="p-5">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span
-                                className={cn(
-                                  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                                  cfg.classes,
-                                )}
-                              >
+                              <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", cfg.classes)}>
                                 {cfg.label}
                               </span>
                               <span className="text-xs text-muted-foreground">
@@ -290,7 +293,7 @@ export default function RadarCliente() {
                             <button
                               onClick={() => handleDeleteInteracao(String(it.id))}
                               disabled={deletingId === String(it.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600 disabled:opacity-50"
+                              className="text-red-400 hover:text-red-600 disabled:opacity-50"
                               title="Excluir interação"
                             >
                               {deletingId === String(it.id)
@@ -309,6 +312,29 @@ export default function RadarCliente() {
                       );
                     })}
                   </ul>
+                  {totalPaginas > 1 && (
+                    <div className="flex items-center justify-between border-t border-border/60 px-5 py-3">
+                      <span className="text-xs text-muted-foreground">
+                        Página {paginaAtual} de {totalPaginas} — {interacoes.length} interações
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setPaginaAtual(p => Math.max(1, p - 1))}
+                          disabled={paginaAtual === 1}
+                          className="rounded-md border border-gray-200 px-3 py-1 text-xs hover:bg-gray-50 disabled:opacity-40"
+                        >
+                          ← Anterior
+                        </button>
+                        <button
+                          onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))}
+                          disabled={paginaAtual === totalPaginas}
+                          className="rounded-md border border-gray-200 px-3 py-1 text-xs hover:bg-gray-50 disabled:opacity-40"
+                        >
+                          Próxima →
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 )}
               </Card>
             </section>
