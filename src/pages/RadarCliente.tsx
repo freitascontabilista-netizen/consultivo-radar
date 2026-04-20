@@ -335,7 +335,6 @@ export default function RadarCliente() {
                       </div>
                     </div>
                   )}
-                )}
               </Card>
             </section>
 
