@@ -23,11 +23,18 @@ export default function Auth() {
   useEffect(() => {
     document.title = "Entrar | CRM Consultivo";
 
-    // Detecta redirect do link de recuperação de senha
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setTela("nova_senha");
+      }
+    });
+
     const hash = window.location.hash;
     if (hash.includes("type=recovery")) {
       setTela("nova_senha");
     }
+
+    return () => subscription.unsubscribe();
   }, []);
 
   if (!authLoading && user && tela === "login") {
