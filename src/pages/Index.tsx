@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase, type RadarConsultivoRow, type SemaforoStatus } from "@/lib/supabase";
-import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowRight, Plus, Search } from "lucide-react";
+import { ArrowRight, Plus, Search, Users, AlertTriangle, Clock, CheckCircle, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 import { NovoClienteModal } from "@/components/NovoClienteModal";
@@ -27,16 +25,8 @@ export default function Index() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("todos");
   const [search, setSearch] = useState("");
-  const [user, setUser] = useState<string>("Usuário");
   const [novoOpen, setNovoOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const email = data.user?.email;
-      if (email) setUser(email);
-    });
-  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -44,18 +34,11 @@ export default function Index() {
       setLoading(true);
       const { data, error } = await supabase.from("radar_consultivo").select("*");
       if (!mounted) return;
-      if (error) {
-        setError(error.message);
-        setRows([]);
-      } else {
-        setRows((data ?? []) as RadarConsultivoRow[]);
-        setError(null);
-      }
+      if (error) { setError(error.message); setRows([]); }
+      else { setRows((data ?? []) as RadarConsultivoRow[]); setError(null); }
       setLoading(false);
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [reloadKey]);
 
   const counts = useMemo(() => {
@@ -80,153 +63,217 @@ export default function Index() {
     });
   }, [rows, filter, search]);
 
+  const semaforoLabel: Record<string, string> = {
+    critico: "Crítico",
+    atencao: "Em atenção",
+    verde: "Em dia",
+  };
+
+  const diasColor = (dias: number) => {
+    if (dias >= 60) return "text-red-500";
+    if (dias >= 30) return "text-amber-500";
+    return "text-emerald-500";
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: "#f8f9fb" }}>
       {/* Top bar */}
-      <header className="sticky top-0 z-10 border-b border-border/60 bg-background/80 backdrop-blur">
+      <header style={{ background: "#fff", borderBottom: "1px solid #e8eaed", position: "sticky", top: 0, zIndex: 10 }}>
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <h1 className="text-base font-semibold tracking-tight sm:text-lg">CRM Consultivo</h1>
-          <div className="flex items-center gap-4">
-            <img src="/logo_freitas.png" alt="" style={{ height: "44px", objectFit: "contain" }} />
+          <div className="flex items-center gap-3">
+            <img src="/logo_freitas.png" alt="" style={{ height: "40px", objectFit: "contain" }} />
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/admin")}
+              style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "6px 12px", fontSize: "13px", color: "#64748b", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              <Settings size={14} /> Admin
+            </button>
             <UserMenu />
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Page heading */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold tracking-tight">Dashboard da Carteira</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Visão consolidada do radar consultivo dos seus clientes.
-          </p>
+
+        {/* Heading */}
+        <div className="mb-8">
+          <h2 style={{ fontSize: "24px", fontWeight: 600, color: "#0f172a", marginBottom: "4px" }}>Dashboard da Carteira</h2>
+          <p style={{ fontSize: "14px", color: "#64748b" }}>Visão consolidada do radar consultivo dos seus clientes.</p>
         </div>
 
-        {/* Metrics */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard label="Total de clientes" value={counts.total} loading={loading} />
-          <MetricCard label="Críticos" value={counts.critico} tone="critical" loading={loading} />
-          <MetricCard label="Em atenção" value={counts.atencao} tone="warning" loading={loading} />
-          <MetricCard label="Em dia" value={counts.verde} tone="success" loading={loading} />
+        {/* Metric cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: "Total de clientes", value: counts.total, icon: <Users size={18} />, color: "#3b82f6", bg: "#eff6ff" },
+            { label: "Críticos", value: counts.critico, icon: <AlertTriangle size={18} />, color: "#ef4444", bg: "#fef2f2" },
+            { label: "Em atenção", value: counts.atencao, icon: <Clock size={18} />, color: "#f59e0b", bg: "#fffbeb" },
+            { label: "Em dia", value: counts.verde, icon: <CheckCircle size={18} />, color: "#10b981", bg: "#f0fdf4" },
+          ].map((m) => (
+            <div key={m.label} style={{ background: "#fff", border: "1px solid #e8eaed", borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ display: "flex", align: "center", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500 }}>{m.label}</span>
+                <div style={{ background: m.bg, color: m.color, borderRadius: "8px", padding: "6px", display: "flex" }}>{m.icon}</div>
+              </div>
+              <div style={{ fontSize: "32px", fontWeight: 700, color: loading ? "#e2e8f0" : m.color, lineHeight: 1 }}>
+                {loading ? "—" : m.value}
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Filters + search */}
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2">
+        {/* Filters + search + new */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
             {(Object.keys(filterLabels) as Filter[]).map((f) => (
-              <Button
+              <button
                 key={f}
-                size="sm"
-                variant={filter === f ? "default" : "outline"}
                 onClick={() => setFilter(f)}
-                className={cn("rounded-full", filter === f && "shadow-sm")}
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: "20px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  border: filter === f ? "none" : "1px solid #e2e8f0",
+                  background: filter === f ? "#0f172a" : "#fff",
+                  color: filter === f ? "#fff" : "#64748b",
+                  transition: "all .15s",
+                }}
               >
                 {filterLabels[f]}
-              </Button>
+              </button>
             ))}
           </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div style={{ position: "relative" }}>
+              <Search size={15} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+              <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar cliente..."
-                className="pl-9"
+                style={{ paddingLeft: "32px", paddingRight: "12px", height: "36px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", background: "#fff", outline: "none", width: "220px", color: "#0f172a" }}
               />
             </div>
-            <Button size="sm" onClick={() => setNovoOpen(true)} className="gap-1">
-              <Plus className="h-4 w-4" /> Novo Cliente
-            </Button>
+            <button
+              onClick={() => setNovoOpen(true)}
+              style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              <Plus size={15} /> Novo Cliente
+            </button>
           </div>
         </div>
 
-        {/* List */}
-        <Card className="mt-4 overflow-hidden border-border/60 shadow-none">
+        {/* Client list */}
+        <div style={{ background: "#fff", border: "1px solid #e8eaed", borderRadius: "12px", overflow: "hidden" }}>
+          {/* Table header */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 140px 160px 120px", padding: "12px 20px", borderBottom: "1px solid #f1f5f9", background: "#f8fafc" }}>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Cliente</span>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Segmento</span>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Dias sem orientação</span>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</span>
+          </div>
+
           {error ? (
-            <div className="p-8 text-center">
-              <p className="text-sm font-medium text-status-critical">Erro ao carregar dados</p>
-              <p className="mt-1 text-xs text-muted-foreground">{error}</p>
-              <p className="mt-3 text-xs text-muted-foreground">
-                Verifique se a view <code className="rounded bg-muted px-1">radar_consultivo</code> existe e está acessível.
-              </p>
+            <div style={{ padding: "48px", textAlign: "center", color: "#ef4444", fontSize: "14px" }}>
+              Erro ao carregar dados: {error}
             </div>
           ) : loading ? (
-            <div className="divide-y divide-border/60">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between p-5">
-                  <div className="space-y-2">
-                    <div className="h-4 w-48 animate-pulse rounded bg-muted" />
-                    <div className="h-3 w-32 animate-pulse rounded bg-muted/60" />
+            <div>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 140px 160px 120px", padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <div style={{ height: "14px", width: "180px", background: "#f1f5f9", borderRadius: "4px" }} />
+                    <div style={{ height: "12px", width: "120px", background: "#f8fafc", borderRadius: "4px" }} />
                   </div>
-                  <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
+                  <div style={{ height: "14px", width: "80px", background: "#f1f5f9", borderRadius: "4px", alignSelf: "center" }} />
+                  <div style={{ height: "14px", width: "60px", background: "#f1f5f9", borderRadius: "4px", alignSelf: "center" }} />
+                  <div style={{ height: "24px", width: "80px", background: "#f1f5f9", borderRadius: "20px", alignSelf: "center" }} />
                 </div>
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-sm text-muted-foreground">
+            <div style={{ padding: "64px", textAlign: "center", color: "#94a3b8", fontSize: "14px" }}>
               Nenhum cliente encontrado.
             </div>
           ) : (
-            <ul className="divide-y divide-border/60">
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {filtered.map((r, idx) => {
                 const targetId = r.id ?? r.cliente_id;
+                const dias = r.dias_sem_orientacao ?? 0;
                 const goRadar = () => targetId != null && navigate(`/radar/${targetId}`);
                 return (
                   <li
                     key={String(targetId ?? idx)}
                     onClick={goRadar}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goRadar()}
-                    className="flex cursor-pointer items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/40"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 140px 160px 120px",
+                      padding: "16px 20px",
+                      borderBottom: idx < filtered.length - 1 ? "1px solid #f1f5f9" : "none",
+                      cursor: "pointer",
+                      transition: "background .12s",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">
+                    {/* Nome */}
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {r.razao_social ?? "Cliente sem razão social"}
                       </p>
-                      {r.nome_fantasia ? (
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {r.nome_fantasia && r.nome_fantasia !== r.razao_social && (
+                        <p style={{ fontSize: "12px", color: "#94a3b8", margin: "2px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {r.nome_fantasia}
                         </p>
-                      ) : null}
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                        {r.segmento ? (
-                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-medium text-foreground/70">
-                            {r.segmento}
-                          </span>
-                        ) : null}
-                        <span className="tabular-nums">
-                          {r.dias_sem_orientacao ?? 0} dias sem orientação
-                        </span>
-                      </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3">
+
+                    {/* Segmento */}
+                    <div>
+                      {r.segmento ? (
+                        <span style={{ fontSize: "11px", fontWeight: 500, color: "#475569", background: "#f1f5f9", padding: "3px 10px", borderRadius: "20px" }}>
+                          {r.segmento}
+                        </span>
+                      ) : (
+                        <span style={{ color: "#cbd5e1", fontSize: "13px" }}>—</span>
+                      )}
+                    </div>
+
+                    {/* Dias */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ fontSize: "20px", fontWeight: 700 }} className={diasColor(dias)}>{dias}</span>
+                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>dias</span>
+                    </div>
+
+                    {/* Status + botão */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <StatusBadge status={r.semaforo} />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          goRadar();
-                        }}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); goRadar(); }}
+                        style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", flexShrink: 0 }}
                       >
-                        Ver radar <ArrowRight className="h-3.5 w-3.5" />
-                      </Button>
+                        <ArrowRight size={14} />
+                      </button>
                     </div>
                   </li>
                 );
               })}
             </ul>
           )}
-        </Card>
+        </div>
+
+        {/* Footer count */}
+        {!loading && !error && (
+          <p style={{ textAlign: "center", fontSize: "12px", color: "#94a3b8", marginTop: "16px" }}>
+            {filtered.length} de {rows.length} clientes
+          </p>
+        )}
       </main>
-      <NovoClienteModal
-        open={novoOpen}
-        onOpenChange={setNovoOpen}
-        onSaved={() => setReloadKey((k) => k + 1)}
-      />
+
+      <NovoClienteModal open={novoOpen} onOpenChange={setNovoOpen} onSaved={() => setReloadKey((k) => k + 1)} />
     </div>
   );
 }
