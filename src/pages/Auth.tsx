@@ -58,3 +58,27 @@ export default function Auth() {
                 autoComplete="email"
                 required
                 value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-password">Senha</Label>
+              <Input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Entrar
+            </Button>
+          </form>
+        </Card>
+      </div>
+    </div>
+  );
+}
