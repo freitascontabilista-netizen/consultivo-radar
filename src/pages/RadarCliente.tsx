@@ -264,7 +264,39 @@ export default function RadarCliente() {
                       const cfg = tipoConfig[it.tipo as string] ?? tipoConfig.suporte;
                       return (
                         <li key={String(it.id)} className="p-5">
-                          <div className="flex flex-wrap items-center gap-2">
+  <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="flex flex-wrap items-center gap-2">
+      <span
+        className={cn(
+          "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+          cfg.classes,
+        )}
+      >
+        {cfg.label}
+      </span>
+      <span className="text-xs text-muted-foreground">
+        {formatDate(it.data_interacao ?? it.data ?? it.criado_em ?? it.created_at)}
+      </span>
+    </div>
+    <button
+      onClick={async () => {
+        if (!confirm("Excluir esta interação?")) return;
+        await supabase.from("interacoes").delete().eq("id", it.id);
+        load();
+      }}
+      className="text-red-400 hover:text-red-600 transition-colors"
+      title="Excluir interação"
+    >
+      <X className="h-4 w-4" />
+    </button>
+  </div>
+  <p className="mt-2 text-sm font-medium text-foreground">
+    {it.assunto ?? "Sem assunto"}
+  </p>
+  {it.resumo && (
+    <p className="mt-1 text-sm text-muted-foreground">{it.resumo}</p>
+  )}
+</li>
                             <span
                               className={cn(
                                 "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
