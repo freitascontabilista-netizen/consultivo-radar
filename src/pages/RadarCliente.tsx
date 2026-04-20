@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { RegistrarOrientacaoModal } from "@/components/RegistrarOrientacaoModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Plus, Pencil, X } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, X, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 
@@ -60,6 +60,7 @@ export default function RadarCliente() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
     razao_social: "",
     nome_fantasia: "",
@@ -138,6 +139,14 @@ export default function RadarCliente() {
     load();
   };
 
+  const handleDeleteInteracao = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta interação? Esta ação não pode ser desfeita.")) return;
+    setDeletingId(id);
+    await supabase.from("interacoes").delete().eq("id", id);
+    setDeletingId(null);
+    load();
+  };
+
   const ultimaOrientacao = useMemo(() => {
     if (cliente?.ultima_orientacao_consultiva) return formatDate(cliente.ultima_orientacao_consultiva);
     const consultiva = interacoes.find((x) => x.tipo === "consultiva");
@@ -212,11 +221,11 @@ export default function RadarCliente() {
                   )}
                 </div>
                 {(cliente as any).observacoes && (
-                <div style={{background: '#fffbeb', border: '1.5px solid #fcd34d', borderRadius: '8px', padding: '12px 16px', marginTop: '12px'}}>
-                  <div style={{fontSize: '11px', fontWeight: 500, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px'}}>Particularidades gerais da empresa</div>
-                  <div style={{fontSize: '13px', color: '#78350f', lineHeight: '1.6'}}>{(cliente as any).observacoes}</div>
-                </div>
-              )}
+                  <div style={{background: '#fffbeb', border: '1.5px solid #fcd34d', borderRadius: '8px', padding: '12px 16px', marginTop: '12px'}}>
+                    <div style={{fontSize: '11px', fontWeight: 500, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px'}}>Particularidades gerais da empresa</div>
+                    <div style={{fontSize: '13px', color: '#78350f', lineHeight: '1.6'}}>{(cliente as any).observacoes}</div>
+                  </div>
+                )}
               </div>
               <div className="rounded-lg border border-border/60 bg-card px-5 py-3 text-right">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -263,51 +272,32 @@ export default function RadarCliente() {
                     {interacoes.map((it) => {
                       const cfg = tipoConfig[it.tipo as string] ?? tipoConfig.suporte;
                       return (
-                        <li key={String(it.id)} className="p-5">
-  <div className="flex flex-wrap items-center justify-between gap-2">
-    <div className="flex flex-wrap items-center gap-2">
-      <span
-        className={cn(
-          "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-          cfg.classes,
-        )}
-      >
-        {cfg.label}
-      </span>
-      <span className="text-xs text-muted-foreground">
-        {formatDate(it.data_interacao ?? it.data ?? it.criado_em ?? it.created_at)}
-      </span>
-    </div>
-    <button
-      onClick={async () => {
-        if (!confirm("Excluir esta interação?")) return;
-        await supabase.from("interacoes").delete().eq("id", it.id);
-        load();
-      }}
-      className="text-red-400 hover:text-red-600 transition-colors"
-      title="Excluir interação"
-    >
-      <X className="h-4 w-4" />
-    </button>
-  </div>
-  <p className="mt-2 text-sm font-medium text-foreground">
-    {it.assunto ?? "Sem assunto"}
-  </p>
-  {it.resumo && (
-    <p className="mt-1 text-sm text-muted-foreground">{it.resumo}</p>
-  )}
-</li>
-                            <span
-                              className={cn(
-                                "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                                cfg.classes,
-                              )}
+                        <li key={String(it.id)} className="p-5 group">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                                  cfg.classes,
+                                )}
+                              >
+                                {cfg.label}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(it.data_interacao ?? it.data ?? it.criado_em ?? it.created_at)}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteInteracao(String(it.id))}
+                              disabled={deletingId === String(it.id)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600 disabled:opacity-50"
+                              title="Excluir interação"
                             >
-                              {cfg.label}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(it.data_interacao ?? it.data ?? it.criado_em ?? it.created_at)}
-                            </span>
+                              {deletingId === String(it.id)
+                                ? <span className="text-xs text-muted-foreground">Excluindo...</span>
+                                : <Trash2 className="h-4 w-4" />
+                              }
+                            </button>
                           </div>
                           <p className="mt-2 text-sm font-medium text-foreground">
                             {it.assunto ?? "Sem assunto"}
