@@ -53,7 +53,7 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
     }
     setSaving(true);
 
-    const { error } = await supabase.from("interacoes").insert({
+    const { data: novaInteracao, error } = await supabase.from("interacoes").insert({
       cliente_id: clienteId,
       tipo,
       canal,
@@ -61,7 +61,7 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
       resumo,
       proximo_passo: proximoPasso || null,
       data_interacao: new Date().toISOString(),
-    });
+    }).select("id").single();
 
     if (error) {
       setSaving(false);
@@ -70,10 +70,11 @@ export function RegistrarOrientacaoModal({ open, onOpenChange, clienteId, onSave
     }
 
     if (tipo === "consultiva" && proximoPasso.trim()) {
+      const origemTag = novaInteracao?.id ? `[interacao:${novaInteracao.id}]` : "";
       const { error: acaoError } = await supabase.from("acoes_consultivas").insert({
         cliente_id: clienteId,
         tema: assunto,
-        problema_identificado: resumo || assunto,
+        problema_identificado: `${origemTag}${resumo || assunto}`,
         acao_recomendada: proximoPasso,
         status: "aberta",
         urgencia: "media",

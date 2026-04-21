@@ -91,7 +91,7 @@ export default function Index() {
     { label: "Dashboard", path: "/", active: true },
     { label: "Clientes", path: "/clientes", active: false },
     { label: "Orientações", path: "/orientacoes", active: false },
-    { label: "Follow-ups", path: "/", active: false },
+    { label: "Follow-ups", path: "/followups", active: false },
     { label: "Administração", path: "/admin", active: false },
   ];
 
