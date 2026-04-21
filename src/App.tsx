@@ -10,6 +10,7 @@ import RadarCliente from "./pages/RadarCliente.tsx";
 import Auth from "./pages/Auth.tsx";
 import Admin from "./pages/Admin.tsx";
 import Clientes from "./pages/Clientes.tsx";
+import Orientacoes from "./pages/Orientacoes.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Clientes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orientacoes"
+              element={
+                <ProtectedRoute>
+                  <Orientacoes />
                 </ProtectedRoute>
               }
             />

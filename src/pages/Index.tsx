@@ -90,7 +90,7 @@ export default function Index() {
   const navItems = [
     { label: "Dashboard", path: "/", active: true },
     { label: "Clientes", path: "/clientes", active: false },
-    { label: "Orientações", path: "/", active: false },
+    { label: "Orientações", path: "/orientacoes", active: false },
     { label: "Follow-ups", path: "/", active: false },
     { label: "Administração", path: "/admin", active: false },
   ];

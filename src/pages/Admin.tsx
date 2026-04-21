@@ -32,7 +32,7 @@ interface Meta {
 }
 
 const initials = (nome: string) =>
-  nome.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  nome.split(" ").filter(Boolean).map(w => w[0]).slice(0, 2).join("").toUpperCase();
 
 const now = new Date();
 const MES_ATUAL = now.getMonth() + 1;
@@ -40,12 +40,22 @@ const ANO_ATUAL = now.getFullYear();
 
 type Tab = "usuarios" | "log" | "relatorios" | "metas";
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: "usuarios",   label: "Usuários" },
-  { key: "log",        label: "Log de atividades" },
-  { key: "relatorios", label: "Relatórios" },
-  { key: "metas",      label: "Metas de atendimento" },
+const TABS: { key: Tab; label: string; icon: string }[] = [
+  { key: "usuarios",   label: "Usuários",              icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75" },
+  { key: "log",        label: "Log de atividades",     icon: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" },
+  { key: "relatorios", label: "Relatórios",             icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8" },
+  { key: "metas",      label: "Metas de atendimento",  icon: "M22 12h-4l-3 9L9 3l-3 9H2" },
 ];
+
+const inp: React.CSSProperties = {
+  width: "100%", borderRadius: "8px", border: "1px solid #e5e7eb",
+  padding: "8px 12px", fontSize: "13px", outline: "none", color: "#111827",
+  background: "#fff", boxSizing: "border-box",
+};
+const lbl: React.CSSProperties = {
+  display: "block", fontSize: "11px", fontWeight: 600, color: "#6b7280",
+  textTransform: "uppercase", letterSpacing: ".06em", marginBottom: "5px",
+};
 
 export default function Admin() {
   const { toast } = useToast();
@@ -67,15 +77,13 @@ export default function Admin() {
   const [loadingMetas, setLoadingMetas] = useState(false);
   const [exportando, setExportando] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user?.email) setUserEmail(data.user.email);
     });
   }, []);
-
-  const inputClass = "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
-  const labelClass = "block text-xs font-medium text-gray-600 mb-1";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -197,83 +205,85 @@ export default function Admin() {
     setExportando("");
   };
 
-  /* ── helpers de card ── */
-  const card: React.CSSProperties = { background: "#fff", border: "1px solid #e8eaed", borderRadius: "12px", overflow: "hidden" };
-  const cardPad: React.CSSProperties = { ...card, padding: "24px" };
+  const navItems = [
+    { label: "Dashboard",    path: "/",        active: false },
+    { label: "Clientes",     path: "/clientes", active: false },
+    { label: "Orientações",  path: "/orientacoes", active: false },
+    { label: "Follow-ups",   path: "/",        active: false },
+    { label: "Administração", path: "/admin",  active: true  },
+  ];
+
+  const emailInitials = userEmail ? userEmail.split("@")[0].slice(0, 2).toUpperCase() : "TF";
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f0f4ff" }}>
+    <div style={{ minHeight: "100vh", background: "#f4f6f9", fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
 
-      {/* Sidebar */}
-      <aside style={{ width: "220px", background: "#0f172a", display: "flex", flexDirection: "column", flexShrink: 0, position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 20 }}>
-        <div style={{ padding: "20px", borderBottom: "1px solid rgba(255,255,255,.08)", marginBottom: "8px" }}>
-          <img src="/logo_freitas.png" alt="" style={{ height: "36px", objectFit: "contain", filter: "brightness(0) invert(1)", opacity: 0.9 }} />
-          <div style={{ fontSize: "11px", color: "rgba(255,255,255,.4)", marginTop: "6px" }}>CRM Consultivo</div>
-        </div>
+      {/* Top nav */}
+      <header style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 30 }}>
+        <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "0 28px", display: "flex", alignItems: "center", height: "58px", gap: "28px" }}>
 
-        <nav style={{ flex: 1, padding: "4px 0" }}>
-          <div style={{ fontSize: "10px", color: "rgba(255,255,255,.3)", padding: "10px 20px 4px", textTransform: "uppercase", letterSpacing: ".08em" }}>Principal</div>
-          {[
-            { label: "Dashboard", path: "/" },
-            { label: "Clientes", path: "/" },
-            { label: "Orientações", path: "/", badge: "12" },
-            { label: "Follow-ups", path: "/", badge: "5" },
-          ].map((item) => (
-            <div key={item.label} onClick={() => navigate(item.path)} style={{ padding: "8px 20px", fontSize: "13px", color: "rgba(255,255,255,.55)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "2px solid transparent" }}>
-              {item.label}
-              {(item as any).badge && <span style={{ background: "#ef4444", color: "#fff", borderRadius: "20px", fontSize: "9px", fontWeight: 600, padding: "1px 6px" }}>{(item as any).badge}</span>}
-            </div>
-          ))}
-
-          <div style={{ fontSize: "10px", color: "rgba(255,255,255,.3)", padding: "14px 20px 4px", textTransform: "uppercase", letterSpacing: ".08em" }}>Gestão</div>
-          {[
-            { label: "Relatórios", path: "/" },
-            { label: "Metas", path: "/" },
-            { label: "Administração", path: "/admin", active: true },
-          ].map((item) => (
-            <div key={item.label} onClick={() => navigate(item.path)} style={{ padding: "8px 20px", fontSize: "13px", color: (item as any).active ? "#fff" : "rgba(255,255,255,.55)", cursor: "pointer", borderLeft: (item as any).active ? "2px solid #10b981" : "2px solid transparent", background: (item as any).active ? "rgba(255,255,255,.06)" : "transparent", fontWeight: (item as any).active ? 500 : 400 }}>
-              {item.label}
-            </div>
-          ))}
-        </nav>
-
-        <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,.08)", display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#059669)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 600, color: "#fff", flexShrink: 0 }}>
-            {userEmail ? userEmail.split("@")[0].slice(0, 2).toUpperCase() : "TF"}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+            <img src="/logo_freitas.png" alt="" style={{ height: "28px", objectFit: "contain" }} />
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151", borderLeft: "1px solid #e5e7eb", paddingLeft: "10px", letterSpacing: ".02em" }}>CRM Consultivo</span>
           </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: "12px", fontWeight: 500, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail || "Usuário"}</div>
-            <div style={{ fontSize: "10px", color: "rgba(255,255,255,.4)" }}>Administrador</div>
+
+          <nav style={{ display: "flex", gap: "2px", flex: 1 }}>
+            {navItems.map(item => (
+              <button key={item.label} onClick={() => navigate(item.path)}
+                style={{ padding: "5px 13px", fontSize: "13px", fontWeight: item.active ? 600 : 400, color: item.active ? "#1d4ed8" : "#6b7280", background: item.active ? "#eff6ff" : "transparent", border: "none", borderRadius: "6px", cursor: "pointer" }}
+                onMouseEnter={e => { if (!item.active) e.currentTarget.style.background = "#f9fafb"; }}
+                onMouseLeave={e => { if (!item.active) e.currentTarget.style.background = "transparent"; }}>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <button onClick={() => setMenuOpen(o => !o)}
+              style={{ display: "flex", alignItems: "center", gap: "8px", background: "transparent", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "5px 10px", cursor: "pointer" }}>
+              <div style={{ width: "27px", height: "27px", borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#1e40af)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff" }}>
+                {emailInitials}
+              </div>
+              <span style={{ fontSize: "12px", color: "#374151", fontWeight: 500, maxWidth: "130px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail || "Usuário"}</span>
+              <svg width="11" height="11" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            {menuOpen && (
+              <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,.08)", minWidth: "190px", overflow: "hidden", zIndex: 50 }}>
+                <div style={{ padding: "12px 14px", borderBottom: "1px solid #f3f4f6" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 600, color: "#111827" }}>{userEmail}</div>
+                  <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "1px" }}>Administrador</div>
+                </div>
+                <button onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+                  style={{ width: "100%", padding: "10px 14px", fontSize: "13px", color: "#dc2626", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: "8px" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  Sair da conta
+                </button>
+              </div>
+            )}
           </div>
-          <button
-            onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
-            title="Sair"
-            style={{ background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,.4)", padding: "4px", display: "flex", alignItems: "center", flexShrink: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,.4)")}
-          >
-            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </button>
         </div>
-      </aside>
+      </header>
 
-      {/* Main */}
-      <div style={{ marginLeft: "220px", flex: 1, padding: "28px" }}>
+      <main style={{ maxWidth: "1240px", margin: "0 auto", padding: "28px 28px 48px" }}>
 
-        {/* Top */}
+        {/* Page header */}
         <div style={{ marginBottom: "24px" }}>
-          <h1 style={{ fontSize: "20px", fontWeight: 600, color: "#0f172a", margin: 0 }}>Administração</h1>
-          <p style={{ fontSize: "13px", color: "#64748b", marginTop: "3px" }}>Gerencie usuários, logs e metas do escritório.</p>
+          <h1 style={{ fontSize: "21px", fontWeight: 700, color: "#111827", margin: 0 }}>Administração</h1>
+          <p style={{ fontSize: "13px", color: "#6b7280", margin: "4px 0 0" }}>Gerencie usuários, logs e metas do escritório.</p>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #e8eaed", marginBottom: "24px", overflowX: "auto" }}>
-          {TABS.map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: "10px 18px", fontSize: "13px", fontWeight: tab === t.key ? 600 : 400, color: tab === t.key ? "#10b981" : "#64748b", background: "none", border: "none", borderBottom: tab === t.key ? "2px solid #10b981" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap", marginBottom: "-1px" }}>
+        <div style={{ display: "flex", gap: "4px", marginBottom: "20px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "5px", width: "fit-content" }}>
+          {TABS.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 16px", fontSize: "13px", fontWeight: tab === t.key ? 600 : 400, color: tab === t.key ? "#1d4ed8" : "#6b7280", background: tab === t.key ? "#eff6ff" : "transparent", border: "none", borderRadius: "7px", cursor: "pointer", whiteSpace: "nowrap", transition: "all .15s" }}>
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                <path d={t.icon}/>
+              </svg>
               {t.label}
             </button>
           ))}
@@ -281,125 +291,268 @@ export default function Admin() {
 
         {/* ── ABA: USUÁRIOS ── */}
         {tab === "usuarios" && (
-          <>
-            <div style={{ ...cardPad, marginBottom: "16px" }}>
-              <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Novo usuário</h3>
-              <form onSubmit={handleCriar} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-                <div><label className={labelClass}>Nome</label><input className={inputClass} value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome completo" /></div>
-                <div><label className={labelClass}>E-mail</label><input className={inputClass} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@exemplo.com" /></div>
-                <div><label className={labelClass}>Senha inicial</label><input className={inputClass} type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="Mínimo 6 caracteres" minLength={6} /></div>
-                <div><label className={labelClass}>Perfil</label>
-                  <select className={inputClass} value={role} onChange={e => setRole(e.target.value)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+            {/* Form novo usuário */}
+            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", background: "#fafafa", display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{ width: "28px", height: "28px", borderRadius: "7px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#1d4ed8" }}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                </div>
+                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#111827", margin: 0 }}>Novo usuário</h3>
+              </div>
+              <form onSubmit={handleCriar} style={{ padding: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label style={lbl}>Nome completo</label>
+                  <input style={inp} value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex.: João Silva" />
+                </div>
+                <div>
+                  <label style={lbl}>E-mail</label>
+                  <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@escritorio.com.br" />
+                </div>
+                <div>
+                  <label style={lbl}>Senha inicial</label>
+                  <input style={inp} type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="Mínimo 6 caracteres" minLength={6} />
+                </div>
+                <div>
+                  <label style={lbl}>Perfil de acesso</label>
+                  <select style={inp} value={role} onChange={e => setRole(e.target.value)}>
                     <option value="colaborador">Colaborador</option>
                     <option value="admin">Administrador</option>
                   </select>
                 </div>
-                <div style={{ gridColumn: "span 2", display: "flex", justifyContent: "flex-end" }}>
-                  <button type="submit" disabled={saving} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 20px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", opacity: saving ? .6 : 1 }}>
-                    {saving && <Loader2 size={14} className="animate-spin" />} Criar usuário
+                <div style={{ gridColumn: "span 2", display: "flex", justifyContent: "flex-end", paddingTop: "4px" }}>
+                  <button type="submit" disabled={saving}
+                    style={{ display: "flex", alignItems: "center", gap: "7px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 20px", fontSize: "13px", fontWeight: 600, cursor: "pointer", opacity: saving ? .6 : 1 }}>
+                    {saving ? <Loader2 size={14} className="animate-spin" /> : <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>}
+                    Criar usuário
                   </button>
                 </div>
               </form>
             </div>
 
-            <div style={card}>
-              <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
-                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: 0 }}>Usuários cadastrados</h3>
+            {/* Lista de usuários */}
+            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ width: "28px", height: "28px", borderRadius: "7px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#1d4ed8" }}>
+                    <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  </div>
+                  <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#111827", margin: 0 }}>Usuários cadastrados</h3>
+                </div>
+                <span style={{ fontSize: "11px", fontWeight: 600, background: "#f1f5f9", color: "#6b7280", borderRadius: "20px", padding: "2px 9px" }}>
+                  {loading ? "—" : `${usuarios.length} usuário${usuarios.length !== 1 ? "s" : ""}`}
+                </span>
               </div>
-              {loading
-                ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Carregando...</div>
-                : usuarios.length === 0
-                  ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Nenhum usuário cadastrado.</div>
-                  : usuarios.map((u, idx) => (
-                    <div key={u.id} style={{ padding: "14px 20px", borderBottom: idx < usuarios.length - 1 ? "1px solid #f1f5f9" : "none" }}>
-                      {editando?.id === u.id ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                          <input className="rounded border border-gray-300 px-2 py-1 text-sm w-40" value={editando.nome} onChange={e => setEditando({ ...editando, nome: e.target.value })} />
-                          <select className="rounded border border-gray-300 px-2 py-1 text-sm" value={editando.role ?? "colaborador"} onChange={e => setEditando({ ...editando, role: e.target.value })}>
-                            <option value="colaborador">Colaborador</option>
-                            <option value="admin">Administrador</option>
-                          </select>
-                          <button onClick={handleSalvarEdicao} disabled={saving} style={{ background: "none", border: "none", cursor: "pointer", color: "#10b981", display: "flex" }}><Check size={16} /></button>
-                          <button onClick={() => setEditando(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex" }}><X size={16} /></button>
-                        </div>
-                      ) : (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#059669)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 600, color: "#fff", flexShrink: 0 }}>{initials(u.nome)}</div>
-                            <div>
-                              <div style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>{u.nome}</div>
-                              <div style={{ fontSize: "11px", color: "#94a3b8" }}>{u.email}</div>
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            {u.role && <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "20px", background: "#dbeafe", color: "#1d4ed8", fontWeight: 500 }}>{u.role === "admin" ? "Administrador" : "Colaborador"}</span>}
-                            <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "20px", fontWeight: 500, background: u.ativo ? "#dcfce7" : "#f1f5f9", color: u.ativo ? "#16a34a" : "#64748b" }}>{u.ativo ? "Ativo" : "Inativo"}</span>
-                            <button onClick={() => setEditando(u)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex" }} onMouseEnter={e => (e.currentTarget.style.color = "#475569")} onMouseLeave={e => (e.currentTarget.style.color = "#94a3b8")}><Pencil size={14} /></button>
-                            {u.ativo
-                              ? <button onClick={() => handleDesativar(u.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#fca5a5", display: "flex" }} onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")} onMouseLeave={e => (e.currentTarget.style.color = "#fca5a5")}><Trash2 size={14} /></button>
-                              : <button onClick={() => handleAtivar(u.id)} style={{ background: "none", border: "1px solid #10b981", borderRadius: "6px", cursor: "pointer", color: "#10b981", fontSize: "11px", fontWeight: 500, padding: "2px 8px" }}>Ativar</button>
-                            }
-                          </div>
-                        </div>
-                      )}
+
+              {/* Column headers */}
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 100px", padding: "8px 20px", background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
+                {["Colaborador", "Perfil", "Status", "Ações"].map(h => (
+                  <div key={h} style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".07em" }}>{h}</div>
+                ))}
+              </div>
+
+              {loading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 100px", padding: "14px 20px", borderBottom: "1px solid #f9fafb", alignItems: "center", gap: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#f3f4f6", flexShrink: 0 }} />
+                      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                        <div style={{ height: "12px", width: "120px", background: "#f3f4f6", borderRadius: "4px" }} />
+                        <div style={{ height: "10px", width: "160px", background: "#f9fafb", borderRadius: "4px" }} />
+                      </div>
                     </div>
-                  ))
-              }
+                    <div style={{ height: "22px", width: "90px", background: "#f3f4f6", borderRadius: "20px" }} />
+                    <div style={{ height: "22px", width: "60px", background: "#f3f4f6", borderRadius: "20px" }} />
+                  </div>
+                ))
+              ) : usuarios.length === 0 ? (
+                <div style={{ padding: "48px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>Nenhum usuário cadastrado.</div>
+              ) : (
+                usuarios.map((u, idx) => (
+                  <div key={u.id} style={{ padding: "12px 20px", borderBottom: idx < usuarios.length - 1 ? "1px solid #f9fafb" : "none" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+
+                    {editando?.id === u.id ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                        <input style={{ ...inp, width: "160px" }} value={editando.nome} onChange={e => setEditando({ ...editando, nome: e.target.value })} />
+                        <select style={{ ...inp, width: "150px" }} value={editando.role ?? "colaborador"} onChange={e => setEditando({ ...editando, role: e.target.value })}>
+                          <option value="colaborador">Colaborador</option>
+                          <option value="admin">Administrador</option>
+                        </select>
+                        <button onClick={handleSalvarEdicao} disabled={saving}
+                          style={{ width: "30px", height: "30px", border: "1px solid #bbf7d0", borderRadius: "7px", background: "#f0fdf4", color: "#16a34a", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <Check size={14} />
+                        </button>
+                        <button onClick={() => setEditando(null)}
+                          style={{ width: "30px", height: "30px", border: "1px solid #e5e7eb", borderRadius: "7px", background: "#fff", color: "#9ca3af", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 100px", alignItems: "center", gap: "8px" }}>
+                        {/* Name */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#1e40af)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                            {initials(u.nome)}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>{u.nome}</div>
+                            <div style={{ fontSize: "11px", color: "#9ca3af" }}>{u.email}</div>
+                          </div>
+                        </div>
+                        {/* Role */}
+                        <div>
+                          <span style={{ fontSize: "11px", padding: "3px 9px", borderRadius: "20px", fontWeight: 500, background: u.role === "admin" ? "#eff6ff" : "#f1f5f9", color: u.role === "admin" ? "#1d4ed8" : "#475569" }}>
+                            {u.role === "admin" ? "Administrador" : "Colaborador"}
+                          </span>
+                        </div>
+                        {/* Status */}
+                        <div>
+                          <span style={{ fontSize: "11px", padding: "3px 9px", borderRadius: "20px", fontWeight: 500, background: u.ativo ? "#f0fdf4" : "#f9fafb", color: u.ativo ? "#16a34a" : "#6b7280" }}>
+                            {u.ativo ? "Ativo" : "Inativo"}
+                          </span>
+                        </div>
+                        {/* Actions */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <button onClick={() => setEditando(u)} title="Editar"
+                            style={{ width: "28px", height: "28px", border: "1px solid #e5e7eb", borderRadius: "7px", background: "#fff", color: "#9ca3af", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = "#1d4ed8"; el.style.color = "#1d4ed8"; el.style.background = "#eff6ff"; }}
+                            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = "#e5e7eb"; el.style.color = "#9ca3af"; el.style.background = "#fff"; }}>
+                            <Pencil size={13} />
+                          </button>
+                          {u.ativo ? (
+                            <button onClick={() => handleDesativar(u.id)} title="Desativar"
+                              style={{ width: "28px", height: "28px", border: "1px solid #e5e7eb", borderRadius: "7px", background: "#fff", color: "#9ca3af", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                              onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = "#fca5a5"; el.style.color = "#dc2626"; el.style.background = "#fef2f2"; }}
+                              onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = "#e5e7eb"; el.style.color = "#9ca3af"; el.style.background = "#fff"; }}>
+                              <Trash2 size={13} />
+                            </button>
+                          ) : (
+                            <button onClick={() => handleAtivar(u.id)}
+                              style={{ padding: "3px 10px", border: "1px solid #bbf7d0", borderRadius: "7px", background: "#f0fdf4", color: "#16a34a", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>
+                              Ativar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
-          </>
+          </div>
         )}
 
         {/* ── ABA: LOG ── */}
         {tab === "log" && (
-          <div style={card}>
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
-              <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: 0 }}>Log de atividades</h3>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <select className="rounded border border-gray-300 px-2 py-1 text-xs" value={filtroUser} onChange={e => setFiltroUser(e.target.value)}>
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{ width: "28px", height: "28px", borderRadius: "7px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#1d4ed8" }}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#111827", margin: 0 }}>Log de atividades</h3>
+              </div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <select value={filtroUser} onChange={e => setFiltroUser(e.target.value)}
+                  style={{ fontSize: "12px", color: "#374151", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "7px", padding: "6px 10px", outline: "none" }}>
                   <option value="">Todos os colaboradores</option>
                   {usuarios.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
                 </select>
-                <select className="rounded border border-gray-300 px-2 py-1 text-xs" value={filtroDias} onChange={e => setFiltroDias(Number(e.target.value))}>
+                <select value={filtroDias} onChange={e => setFiltroDias(Number(e.target.value))}
+                  style={{ fontSize: "12px", color: "#374151", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "7px", padding: "6px 10px", outline: "none" }}>
                   <option value={7}>Últimos 7 dias</option>
                   <option value={30}>Últimos 30 dias</option>
                   <option value={90}>Últimos 90 dias</option>
                 </select>
+                <button onClick={loadLogs}
+                  style={{ display: "flex", alignItems: "center", gap: "5px", padding: "6px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "7px", color: "#1d4ed8", fontSize: "12px", fontWeight: 500, cursor: "pointer" }}>
+                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  Atualizar
+                </button>
               </div>
             </div>
-            {loadingLog
-              ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Carregando...</div>
-              : logs.length === 0
-                ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Nenhuma atividade no período.</div>
-                : logs.map((l, idx) => (
-                  <div key={l.id} style={{ display: "flex", gap: "12px", padding: "12px 20px", borderBottom: idx < logs.length - 1 ? "1px solid #f1f5f9" : "none" }}>
-                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981", marginTop: "5px", flexShrink: 0 }} />
-                    <div>
-                      <span style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>{l.usuario_nome}</span>
-                      <span style={{ fontSize: "13px", color: "#64748b" }}> — {l.acao}</span>
-                      <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>{new Date(l.created_at).toLocaleString("pt-BR")}</div>
+
+            {loadingLog ? (
+              <div style={{ padding: "48px", textAlign: "center", color: "#9ca3af", fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <Loader2 size={16} className="animate-spin" /> Carregando logs...
+              </div>
+            ) : logs.length === 0 ? (
+              <div style={{ padding: "48px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>Nenhuma atividade no período.</div>
+            ) : (
+              <div>
+                {logs.map((l, idx) => (
+                  <div key={l.id} style={{ display: "flex", gap: "14px", padding: "13px 20px", borderBottom: idx < logs.length - 1 ? "1px solid #f9fafb" : "none", alignItems: "flex-start" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#1d4ed8", flexShrink: 0 }}>
+                      <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "13px", color: "#111827" }}>
+                        <span style={{ fontWeight: 600 }}>{l.usuario_nome}</span>
+                        <span style={{ color: "#6b7280" }}> — {l.acao}</span>
+                      </div>
+                      {l.entidade && <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "1px" }}>Entidade: {l.entidade}</div>}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#9ca3af", flexShrink: 0, textAlign: "right" }}>
+                      {new Date(l.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </div>
                   </div>
-                ))
-            }
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* ── ABA: RELATÓRIOS ── */}
         {tab === "relatorios" && (
-          <div style={cardPad}>
-            <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Exportar relatórios</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", background: "#fafafa", display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ width: "28px", height: "28px", borderRadius: "7px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#1d4ed8" }}>
+                <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+              </div>
+              <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#111827", margin: 0 }}>Exportar relatórios</h3>
+            </div>
+            <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
               {[
-                { tipo: "clientes", titulo: "Lista de clientes", desc: "Razão social, CNPJ, segmento, regime tributário" },
-                { tipo: "orientacoes", titulo: `Orientações de ${MES_ATUAL}/${ANO_ATUAL}`, desc: "Tema, problema, ação, responsável, status" },
-              ].map((r) => (
-                <div key={r.tipo} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", border: "1px solid #e8eaed", borderRadius: "10px" }}>
-                  <div>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>{r.titulo}</div>
-                    <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>{r.desc}</div>
+                {
+                  tipo: "clientes",
+                  titulo: "Lista de clientes",
+                  desc: "Razão social, CNPJ, segmento e regime tributário de todos os clientes cadastrados",
+                  icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+                  color: "#1d4ed8",
+                  bg: "#eff6ff",
+                },
+                {
+                  tipo: "orientacoes",
+                  titulo: `Orientações — ${MES_ATUAL.toString().padStart(2, "0")}/${ANO_ATUAL}`,
+                  desc: "Tema, problema identificado, ação recomendada, responsável e status do mês atual",
+                  icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8",
+                  color: "#16a34a",
+                  bg: "#f0fdf4",
+                },
+              ].map(r => (
+                <div key={r.tipo} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", border: "1px solid #e5e7eb", borderRadius: "10px", gap: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: r.bg, display: "flex", alignItems: "center", justifyContent: "center", color: r.color, flexShrink: 0 }}>
+                      <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d={r.icon}/></svg>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>{r.titulo}</div>
+                      <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>{r.desc}</div>
+                    </div>
                   </div>
-                  <button onClick={() => exportarCSV(r.tipo)} disabled={exportando === r.tipo} style={{ border: "1px solid #e2e8f0", background: "#fff", borderRadius: "8px", padding: "7px 16px", fontSize: "12px", fontWeight: 500, color: "#475569", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", opacity: exportando === r.tipo ? .6 : 1 }}>
-                    {exportando === r.tipo && <Loader2 size={12} className="animate-spin" />} Exportar CSV
+                  <button onClick={() => exportarCSV(r.tipo)} disabled={exportando === r.tipo}
+                    style={{ display: "flex", alignItems: "center", gap: "6px", border: "1px solid #e5e7eb", background: "#fff", borderRadius: "8px", padding: "8px 16px", fontSize: "12px", fontWeight: 500, color: "#374151", cursor: "pointer", flexShrink: 0, opacity: exportando === r.tipo ? .6 : 1 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}>
+                    {exportando === r.tipo
+                      ? <><Loader2 size={12} className="animate-spin" /> Exportando...</>
+                      : <><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar CSV</>
+                    }
                   </button>
                 </div>
               ))}
@@ -409,46 +562,78 @@ export default function Admin() {
 
         {/* ── ABA: METAS ── */}
         {tab === "metas" && (
-          <div style={card}>
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>Metas de {MES_ATUAL}/{ANO_ATUAL}</div>
-                <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>Orientações por colaborador no mês</div>
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{ width: "28px", height: "28px", borderRadius: "7px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#1d4ed8" }}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#111827" }}>
+                    Metas de {now.toLocaleString("pt-BR", { month: "long" })} de {ANO_ATUAL}
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#9ca3af" }}>Orientações por colaborador no mês</div>
+                </div>
               </div>
-              <button onClick={handleSalvarMetas} disabled={saving} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 18px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", opacity: saving ? .6 : 1 }}>
-                {saving && <Loader2 size={14} className="animate-spin" />} Salvar metas
+              <button onClick={handleSalvarMetas} disabled={saving}
+                style={{ display: "flex", alignItems: "center", gap: "7px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 18px", fontSize: "13px", fontWeight: 600, cursor: "pointer", opacity: saving ? .6 : 1 }}>
+                {saving ? <Loader2 size={14} className="animate-spin" /> : <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>}
+                Salvar metas
               </button>
             </div>
-            {loadingMetas
-              ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Carregando...</div>
-              : metas.length === 0
-                ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Nenhuma meta configurada ainda.</div>
-                : metas.map((m, i) => {
-                  const pct = m.meta > 0 ? Math.min(100, Math.round(((m.realizado ?? 0) / m.meta) * 100)) : 0;
-                  const barColor = pct >= 80 ? "#10b981" : pct >= 50 ? "#f59e0b" : "#ef4444";
-                  return (
-                    <div key={m.usuario_id} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 20px", borderBottom: i < metas.length - 1 ? "1px solid #f1f5f9" : "none" }}>
-                      <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#059669)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 600, color: "#fff", flexShrink: 0 }}>{initials(m.usuario_nome)}</div>
-                      <span style={{ fontSize: "13px", color: "#0f172a", width: "120px", flexShrink: 0 }}>{m.usuario_nome}</span>
-                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div style={{ flex: 1, height: "6px", background: "#f1f5f9", borderRadius: "20px", overflow: "hidden" }}>
-                          <div style={{ height: "100%", borderRadius: "20px", background: barColor, width: `${pct}%`, transition: "width .3s" }} />
-                        </div>
-                        <span style={{ fontSize: "11px", color: "#94a3b8", minWidth: "56px", textAlign: "right" }}>{m.realizado ?? 0} / {m.meta}</span>
+
+            {loadingMetas ? (
+              <div style={{ padding: "48px", textAlign: "center", color: "#9ca3af", fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <Loader2 size={16} className="animate-spin" /> Carregando metas...
+              </div>
+            ) : metas.length === 0 ? (
+              <div style={{ padding: "48px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>Nenhuma meta configurada para este mês.</div>
+            ) : (
+              metas.map((m, i) => {
+                const pct = m.meta > 0 ? Math.min(100, Math.round(((m.realizado ?? 0) / m.meta) * 100)) : 0;
+                const barColor = pct >= 80 ? "#16a34a" : pct >= 50 ? "#d97706" : "#dc2626";
+                const barBg    = pct >= 80 ? "#f0fdf4" : pct >= 50 ? "#fffbeb" : "#fef2f2";
+                return (
+                  <div key={m.usuario_id} style={{ padding: "16px 20px", borderBottom: i < metas.length - 1 ? "1px solid #f9fafb" : "none" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                      <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#1e40af)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                        {initials(m.usuario_nome)}
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#64748b" }}>
-                        <span>Meta:</span>
-                        <input type="number" min={1} max={999} style={{ width: "52px", height: "28px", border: "1px solid #e2e8f0", borderRadius: "6px", textAlign: "center", fontSize: "13px", outline: "none" }} value={m.meta}
+                      <div style={{ minWidth: "130px", flexShrink: 0 }}>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>{m.usuario_nome}</div>
+                        <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "1px" }}>
+                          {m.realizado ?? 0} de {m.meta} orientações
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "5px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "11px", color: "#6b7280" }}>Progresso</span>
+                          <span style={{ fontSize: "12px", fontWeight: 700, color: barColor }}>{pct}%</span>
+                        </div>
+                        <div style={{ height: "6px", background: "#f3f4f6", borderRadius: "3px", overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: "3px", background: barColor, width: `${pct}%`, transition: "width .4s ease" }} />
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0, background: barBg, border: `1px solid ${barColor}30`, borderRadius: "8px", padding: "6px 12px" }}>
+                        <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>Meta:</span>
+                        <input type="number" min={1} max={999}
+                          style={{ width: "50px", border: "1px solid #e5e7eb", borderRadius: "6px", textAlign: "center", fontSize: "13px", fontWeight: 600, color: "#111827", padding: "3px 6px", outline: "none", background: "#fff" }}
+                          value={m.meta}
                           onChange={e => { const updated = [...metas]; updated[i] = { ...m, meta: Number(e.target.value) }; setMetas(updated); }} />
-                        <span>/mês</span>
+                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>/mês</span>
                       </div>
                     </div>
-                  );
-                })
-            }
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
-      </div>
+      </main>
+
+      {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 29 }} />}
     </div>
   );
 }

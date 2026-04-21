@@ -104,7 +104,7 @@ export default function Clientes() {
   const navItems = [
     { label: "Dashboard", path: "/", active: false },
     { label: "Clientes",  path: "/clientes", active: true },
-    { label: "Orientações", path: "/", active: false },
+    { label: "Orientações", path: "/orientacoes", active: false },
     { label: "Follow-ups", path: "/", active: false },
     { label: "Administração", path: "/admin", active: false },
   ];
