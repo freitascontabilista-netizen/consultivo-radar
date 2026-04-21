@@ -62,6 +62,8 @@ export default function RadarCliente() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [paginaAtual, setPaginaAtual] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState("");
   const [editForm, setEditForm] = useState<EditForm>({
     razao_social: "",
@@ -144,6 +146,24 @@ export default function RadarCliente() {
     if (!confirm("Tem certeza que deseja excluir esta interação?")) return;
     setDeletingId(id);
     await supabase.from("interacoes").delete().eq("id", id);
+    setDeletingId(null);
+    setPaginaAtual(1);
+    load();
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkDelete = async () => {
+    const count = selectedIds.size;
+    if (!count) return;
+    if (!confirm(`Excluir ${count} interação${count > 1 ? "ões" : ""}? Esta ação não pode ser desfeita.`)) return;
+    setDeletingId("bulk");
+    await supabase.from("interacoes").delete().in("id", Array.from(selectedIds));
+    setSelectedIds(new Set());
     setDeletingId(null);
     setPaginaAtual(1);
     load();
@@ -333,6 +353,23 @@ export default function RadarCliente() {
                   <h2 style={{ fontSize: "14px", fontWeight: 700, color: "#111827", margin: 0 }}>Timeline de interações</h2>
                   <span style={{ fontSize: "11px", color: "#9ca3af", background: "#f3f4f6", padding: "2px 8px", borderRadius: "10px" }}>{interacoes.length} registros</span>
                 </div>
+                {selectedIds.size > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", marginBottom: "10px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#1d4ed8", flex: 1 }}>
+                      {selectedIds.size} selecionado{selectedIds.size > 1 ? "s" : ""}
+                    </span>
+                    <button onClick={handleBulkDelete} disabled={deletingId === "bulk"}
+                      style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#dc2626", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: 600, cursor: "pointer", opacity: deletingId === "bulk" ? .6 : 1 }}>
+                      <Trash2 size={13} />
+                      {deletingId === "bulk" ? "Excluindo..." : "Excluir selecionados"}
+                    </button>
+                    <button onClick={clearSelection}
+                      style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: 500, cursor: "pointer" }}>
+                      <X size={13} />
+                      Cancelar seleção
+                    </button>
+                  </div>
+                )}
                 <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
                   {interacoes.length === 0 ? (
                     <div style={{ padding: "48px", textAlign: "center" }}>
@@ -346,41 +383,51 @@ export default function RadarCliente() {
                     <>
                       {interacoesPaginadas.map((it, idx) => {
                         const cfg = tipoConfig[it.tipo as string] ?? tipoConfig.suporte;
+                        const isSelected = selectedIds.has(String(it.id));
                         return (
-                          <div key={String(it.id)} style={{ padding: "14px 18px", borderBottom: idx < interacoesPaginadas.length - 1 ? "1px solid #f9fafb" : "none" }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "7px", flexWrap: "wrap" }}>
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", borderRadius: "20px", background: cfg.bg, color: cfg.color, padding: "3px 9px", fontSize: "11px", fontWeight: 600 }}>
-                                  <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: cfg.color }} />
-                                  {cfg.label}
-                                </span>
-                                {(it as any).canal && (
-                                  <span style={{ fontSize: "10px", color: "#9ca3af", background: "#f3f4f6", padding: "2px 6px", borderRadius: "8px" }}>{(it as any).canal}</span>
-                                )}
-                                <span style={{ fontSize: "11px", color: "#9ca3af" }}>
-                                  {formatDate(it.data_interacao ?? (it as any).data ?? it.criado_em ?? (it as any).created_at)}
-                                </span>
+                          <div key={String(it.id)}
+                            style={{ padding: "14px 18px", borderBottom: idx < interacoesPaginadas.length - 1 ? "1px solid #f9fafb" : "none", background: isSelected ? "#eff6ff" : "transparent", display: "flex", alignItems: "flex-start", gap: "10px", transition: "background .1s" }}
+                            onMouseEnter={e => { setHoveredId(String(it.id)); if (!isSelected) e.currentTarget.style.background = "#f9fafb"; }}
+                            onMouseLeave={e => { setHoveredId(null); if (!isSelected) e.currentTarget.style.background = "transparent"; }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleSelect(String(it.id))}
+                              style={{ marginTop: "3px", cursor: "pointer", width: "15px", height: "15px", flexShrink: 0, accentColor: "#1d4ed8" }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "7px", flexWrap: "wrap" }}>
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", borderRadius: "20px", background: cfg.bg, color: cfg.color, padding: "3px 9px", fontSize: "11px", fontWeight: 600 }}>
+                                    <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: cfg.color }} />
+                                    {cfg.label}
+                                  </span>
+                                  {(it as any).canal && (
+                                    <span style={{ fontSize: "10px", color: "#9ca3af", background: "#f3f4f6", padding: "2px 6px", borderRadius: "8px" }}>{(it as any).canal}</span>
+                                  )}
+                                  <span style={{ fontSize: "11px", color: "#9ca3af" }}>
+                                    {formatDate(it.data_interacao ?? (it as any).data ?? it.criado_em ?? (it as any).created_at)}
+                                  </span>
+                                </div>
+                                <button onClick={() => handleDeleteInteracao(String(it.id))} disabled={deletingId === String(it.id)}
+                                  style={{ background: "none", border: "none", cursor: "pointer", color: "#d1d5db", padding: "2px", display: "flex", alignItems: "center" }}
+                                  onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")}
+                                  onMouseLeave={e => (e.currentTarget.style.color = "#d1d5db")}
+                                  title="Excluir">
+                                  {deletingId === String(it.id)
+                                    ? <span style={{ fontSize: "11px", color: "#9ca3af" }}>Excluindo...</span>
+                                    : <Trash2 size={14} />}
+                                </button>
                               </div>
-                              <button onClick={() => handleDeleteInteracao(String(it.id))} disabled={deletingId === String(it.id)}
-                                style={{ background: "none", border: "none", cursor: "pointer", color: "#d1d5db", padding: "2px", display: "flex", alignItems: "center" }}
-                                onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")}
-                                onMouseLeave={e => (e.currentTarget.style.color = "#d1d5db")}
-                                title="Excluir">
-                                {deletingId === String(it.id)
-                                  ? <span style={{ fontSize: "11px", color: "#9ca3af" }}>Excluindo...</span>
-                                  : <Trash2 size={14} />}
-                              </button>
+                              <p style={{ margin: "7px 0 0", fontSize: "13px", fontWeight: 600, color: "#111827" }}>{it.assunto ?? "Sem assunto"}</p>
+                              {it.resumo && <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#6b7280", lineHeight: 1.5 }}>{it.resumo}</p>}
+                              {(it as any).proximo_passo && (
+                                <div style={{ marginTop: "6px", display: "flex", alignItems: "flex-start", gap: "5px", fontSize: "11px", color: "#d97706", background: "#fffbeb", padding: "4px 8px", borderRadius: "6px", border: "1px solid #fde68a" }}>
+                                  <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: "1px" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                  {(it as any).proximo_passo}
+                                </div>
+                              )}
                             </div>
-                            <p style={{ margin: "7px 0 0", fontSize: "13px", fontWeight: 600, color: "#111827" }}>{it.assunto ?? "Sem assunto"}</p>
-                            {it.resumo && <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#6b7280", lineHeight: 1.5 }}>{it.resumo}</p>}
-                            {(it as any).proximo_passo && (
-                              <div style={{ marginTop: "6px", display: "flex", alignItems: "flex-start", gap: "5px", fontSize: "11px", color: "#d97706", background: "#fffbeb", padding: "4px 8px", borderRadius: "6px", border: "1px solid #fde68a" }}>
-                                <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: "1px" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                                {(it as any).proximo_passo}
-                              </div>
-                            )}
                           </div>
                         );
                       })}
