@@ -9,6 +9,7 @@ import Index from "./pages/Index.tsx";
 import RadarCliente from "./pages/RadarCliente.tsx";
 import Auth from "./pages/Auth.tsx";
 import Admin from "./pages/Admin.tsx";
+import Clientes from "./pages/Clientes.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <RadarCliente />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/clientes"
+              element={
+                <ProtectedRoute>
+                  <Clientes />
                 </ProtectedRoute>
               }
             />

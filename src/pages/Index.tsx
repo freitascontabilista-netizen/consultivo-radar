@@ -3,29 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { supabase, type RadarConsultivoRow, type SemaforoStatus } from "@/lib/supabase";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NovoClienteModal } from "@/components/NovoClienteModal";
-import { cn } from "@/lib/utils";
-
-type Filter = "todos" | SemaforoStatus;
-
-const filterLabels: Record<Filter, string> = {
-  todos: "Todos",
-  critico: "Crítico",
-  atencao: "Em atenção",
-  verde: "Em dia",
-};
 
 export default function Index() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<RadarConsultivoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>("todos");
-  const [search, setSearch] = useState("");
   const [novoOpen, setNovoOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [userEmail, setUserEmail] = useState("");
-  const [pagina, setPagina] = useState(1);
-  const POR_PAGINA = 10;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -56,237 +43,392 @@ export default function Index() {
     return c;
   }, [rows]);
 
-  const filtered = useMemo(() => {
-    setPagina(1);
-    const q = search.trim().toLowerCase();
-    return rows.filter((r) => {
-      if (filter !== "todos" && r.semaforo !== filter) return false;
-      if (q) {
-        const haystack = `${r.razao_social ?? ""} ${r.nome_fantasia ?? ""}`.toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [rows, filter, search]);
+  const criticalClients = useMemo(() =>
+    rows.filter(r => r.semaforo === "critico").sort((a, b) => (b.dias_sem_orientacao ?? 0) - (a.dias_sem_orientacao ?? 0)).slice(0, 5),
+    [rows]
+  );
 
-  const totalPaginas = Math.ceil(filtered.length / POR_PAGINA);
-  const paginados = filtered.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
+  const atencaoClients = useMemo(() =>
+    rows.filter(r => r.semaforo === "atencao").sort((a, b) => (b.dias_sem_orientacao ?? 0) - (a.dias_sem_orientacao ?? 0)).slice(0, 4),
+    [rows]
+  );
 
-  const initials = (email: string) =>
-    email.split("@")[0].slice(0, 2).toUpperCase();
+  const totalFollowups = useMemo(() =>
+    rows.reduce((sum, r) => sum + (r.followups_pendentes ?? 0), 0),
+    [rows]
+  );
 
-  const diasColor = (dias: number) => {
-    if (dias >= 60) return "#ef4444";
-    if (dias >= 30) return "#f59e0b";
-    return "#10b981";
-  };
+  const segmentos = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const r of rows) {
+      const s = r.segmento ?? "Outros";
+      map[s] = (map[s] ?? 0) + 1;
+    }
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [rows]);
+
+  const initials = (email: string) => email.split("@")[0].slice(0, 2).toUpperCase();
+  const nameInitials = (name: string | null) => (name ?? "?").trim().split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
+
+  const firstName = userEmail ? userEmail.split("@")[0].split(".")[0] : "";
+  const firstName2 = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+
+  const now = new Date();
+  const hora = now.getHours();
+  const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+  const dataFormatada = now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  // Donut chart
+  const r = 54;
+  const circ = 2 * Math.PI * r;
+  const total = counts.total || 1;
+  const verdeLen = (counts.verde / total) * circ;
+  const atencaoLen = (counts.atencao / total) * circ;
+  const criticoLen = (counts.critico / total) * circ;
+  const startOffset = circ * 0.25;
 
   const navItems = [
-    { label: "Dashboard", icon: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z", active: true },
-    { label: "Clientes", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", active: false },
-    { label: "Orientações", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6", active: false },
-    { label: "Follow-ups", icon: "M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11", active: false },
+    { label: "Dashboard", path: "/", active: true },
+    { label: "Clientes", path: "/clientes", active: false },
+    { label: "Orientações", path: "/", active: false },
+    { label: "Follow-ups", path: "/", active: false },
+    { label: "Administração", path: "/admin", active: false },
   ];
 
-  const metrics = [
-    { label: "Total de clientes", value: counts.total, sub: `${counts.total} na carteira`, bg: "#6366f1" },
-    { label: "Críticos", value: counts.critico, sub: `${counts.total > 0 ? Math.round(counts.critico / counts.total * 100) : 0}% da carteira`, bg: "#ef4444" },
-    { label: "Em atenção", value: counts.atencao, sub: `${counts.total > 0 ? Math.round(counts.atencao / counts.total * 100) : 0}% da carteira`, bg: "#f59e0b" },
-    { label: "Em dia", value: counts.verde, sub: `${counts.total > 0 ? Math.round(counts.verde / counts.total * 100) : 0}% da carteira`, bg: "#10b981" },
-  ];
+  const S: Record<string, React.CSSProperties> = {
+    root: { minHeight: "100vh", background: "#f4f6f9", fontFamily: "'Inter', system-ui, -apple-system, sans-serif" },
+    header: { background: "#fff", borderBottom: "1px solid #e5e7eb", position: "sticky" as const, top: 0, zIndex: 30 },
+    headerInner: { maxWidth: "1240px", margin: "0 auto", padding: "0 28px", display: "flex", alignItems: "center", height: "58px", gap: "28px" },
+    logo: { display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 },
+    logoText: { fontSize: "12px", fontWeight: 600, color: "#374151", borderLeft: "1px solid #e5e7eb", paddingLeft: "10px", letterSpacing: ".02em" },
+    nav: { display: "flex", gap: "2px", flex: 1 },
+    main: { maxWidth: "1240px", margin: "0 auto", padding: "28px 28px 48px" },
+    greeting: { marginBottom: "28px" },
+    greetH: { fontSize: "20px", fontWeight: 700, color: "#111827", margin: 0 },
+    greetSub: { fontSize: "13px", color: "#6b7280", marginTop: "3px" },
+    grid4: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px", marginBottom: "20px" },
+    grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "20px" },
+    grid3: { display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "14px" },
+    card: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px" },
+    cardPad: { padding: "20px" },
+    cardTitle: { fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase" as const, letterSpacing: ".08em", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" },
+    skel: { background: "#f3f4f6", borderRadius: "5px", animation: "pulse 1.5s ease-in-out infinite" },
+  };
+
+  const KpiCard = ({ label, value, sub, icon, accent, border }: { label: string; value: number | string; sub: string; icon: React.ReactNode; accent: string; border: string }) => (
+    <div style={{ ...S.card, borderTop: `3px solid ${border}`, padding: "18px 20px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".07em", marginBottom: "8px" }}>{label}</div>
+          <div style={{ fontSize: "32px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{loading ? "—" : value}</div>
+          <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "5px" }}>{sub}</div>
+        </div>
+        <div style={{ width: "38px", height: "38px", borderRadius: "9px", background: `${accent}18`, display: "flex", alignItems: "center", justifyContent: "center", color: accent, flexShrink: 0 }}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f0f4ff" }}>
+    <div style={S.root}>
 
-      {/* Sidebar */}
-      <aside style={{ width: "220px", background: "#0f172a", display: "flex", flexDirection: "column", flexShrink: 0, position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 20 }}>
-        {/* Logo */}
-        <div style={{ padding: "20px", borderBottom: "1px solid rgba(255,255,255,.08)", marginBottom: "8px" }}>
-          <img src="/logo_freitas.png" alt="" style={{ height: "36px", objectFit: "contain", filter: "brightness(0) invert(1)", opacity: 0.9 }} />
-          <div style={{ fontSize: "11px", color: "rgba(255,255,255,.4)", marginTop: "6px" }}>CRM Consultivo</div>
-        </div>
-
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: "4px 0" }}>
-          <div style={{ fontSize: "10px", color: "rgba(255,255,255,.3)", padding: "10px 20px 4px", textTransform: "uppercase", letterSpacing: ".08em" }}>Principal</div>
-
-          {[
-            { label: "Dashboard", path: "/", active: true },
-            { label: "Clientes", path: "/", active: false },
-            { label: "Orientações", path: "/", active: false, badge: "12" },
-            { label: "Follow-ups", path: "/", active: false, badge: "5" },
-          ].map((item) => (
-            <div key={item.label} style={{ padding: "8px 20px", fontSize: "13px", color: item.active ? "#fff" : "rgba(255,255,255,.55)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: item.active ? "2px solid #10b981" : "2px solid transparent", background: item.active ? "rgba(255,255,255,.06)" : "transparent", fontWeight: item.active ? 500 : 400 }}>
-              {item.label}
-              {item.badge && <span style={{ background: "#ef4444", color: "#fff", borderRadius: "20px", fontSize: "9px", fontWeight: 600, padding: "1px 6px" }}>{item.badge}</span>}
-            </div>
-          ))}
-
-          <div style={{ fontSize: "10px", color: "rgba(255,255,255,.3)", padding: "14px 20px 4px", textTransform: "uppercase", letterSpacing: ".08em" }}>Gestão</div>
-
-          {[
-            { label: "Relatórios", path: "/" },
-            { label: "Metas", path: "/" },
-            { label: "Administração", path: "/admin" },
-          ].map((item) => (
-            <div key={item.label} onClick={() => navigate(item.path)} style={{ padding: "8px 20px", fontSize: "13px", color: "rgba(255,255,255,.55)", cursor: "pointer", borderLeft: "2px solid transparent" }}>
-              {item.label}
-            </div>
-          ))}
-        </nav>
-
-        {/* User + Sair */}
-        <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,.08)", display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#059669)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 600, color: "#fff", flexShrink: 0 }}>
-            {initials(userEmail || "TF")}
+      {/* Top nav */}
+      <header style={S.header}>
+        <div style={S.headerInner}>
+          <div style={S.logo}>
+            <img src="/logo_freitas.png" alt="" style={{ height: "28px", objectFit: "contain" }} />
+            <span style={S.logoText}>CRM Consultivo</span>
           </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: "12px", fontWeight: 500, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail || "Usuário"}</div>
-            <div style={{ fontSize: "10px", color: "rgba(255,255,255,.4)" }}>Administrador</div>
+
+          <nav style={S.nav}>
+            {navItems.map(item => (
+              <button key={item.label} onClick={() => navigate(item.path)}
+                style={{ padding: "5px 13px", fontSize: "13px", fontWeight: item.active ? 600 : 400, color: item.active ? "#1d4ed8" : "#6b7280", background: item.active ? "#eff6ff" : "transparent", border: "none", borderRadius: "6px", cursor: "pointer" }}
+                onMouseEnter={e => { if (!item.active) e.currentTarget.style.background = "#f9fafb"; }}
+                onMouseLeave={e => { if (!item.active) e.currentTarget.style.background = "transparent"; }}>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <button onClick={() => setMenuOpen(o => !o)}
+              style={{ display: "flex", alignItems: "center", gap: "8px", background: "transparent", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "5px 10px", cursor: "pointer" }}>
+              <div style={{ width: "27px", height: "27px", borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#1e40af)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff" }}>
+                {initials(userEmail || "TF")}
+              </div>
+              <span style={{ fontSize: "12px", color: "#374151", fontWeight: 500, maxWidth: "130px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail || "Usuário"}</span>
+              <svg width="11" height="11" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            {menuOpen && (
+              <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,.08)", minWidth: "190px", overflow: "hidden", zIndex: 50 }}>
+                <div style={{ padding: "12px 14px", borderBottom: "1px solid #f3f4f6" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 600, color: "#111827" }}>{userEmail}</div>
+                  <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "1px" }}>Administrador</div>
+                </div>
+                <button onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+                  style={{ width: "100%", padding: "10px 14px", fontSize: "13px", color: "#dc2626", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: "8px" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  Sair da conta
+                </button>
+              </div>
+            )}
           </div>
-          <button
-            onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
-            title="Sair"
-            style={{ background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,.4)", padding: "4px", display: "flex", alignItems: "center", flexShrink: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,.4)")}
-          >
-            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </button>
         </div>
-      </aside>
+      </header>
 
-      {/* Main */}
-      <div style={{ marginLeft: "220px", flex: 1, padding: "28px" }}>
+      <main style={S.main}>
 
-        {/* Top */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+        {/* Greeting + action */}
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px" }}>
           <div>
-            <h1 style={{ fontSize: "20px", fontWeight: 600, color: "#0f172a", margin: 0 }}>Dashboard da Carteira</h1>
-            <p style={{ fontSize: "13px", color: "#64748b", marginTop: "3px" }}>Visão consolidada do radar consultivo dos seus clientes.</p>
+            <div style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: "4px" }}>{dataFormatada}</div>
+            <h1 style={{ fontSize: "21px", fontWeight: 700, color: "#111827", margin: 0 }}>{saudacao}{firstName2 ? `, ${firstName2}` : ""}.</h1>
+            <p style={{ fontSize: "13px", color: "#6b7280", margin: "4px 0 0" }}>
+              {loading ? "Carregando sua carteira..." : `Você tem ${counts.total} cliente${counts.total !== 1 ? "s" : ""} na carteira${counts.critico > 0 ? ` — ${counts.critico} requer${counts.critico === 1 ? "" : "em"} atenção imediata.` : " e tudo está sob controle."}`}
+            </p>
           </div>
-          <button onClick={() => setNovoOpen(true)} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 18px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+          <button onClick={() => setNovoOpen(true)}
+            style={{ display: "flex", alignItems: "center", gap: "7px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+            onMouseEnter={e => e.currentTarget.style.background = "#1e40af"}
+            onMouseLeave={e => e.currentTarget.style.background = "#1d4ed8"}>
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             Novo cliente
           </button>
         </div>
 
-        {/* Metrics */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px", marginBottom: "24px" }}>
-          {metrics.map((m) => (
-            <div key={m.label} style={{ background: m.bg, borderRadius: "12px", padding: "18px", color: "#fff", position: "relative", overflow: "hidden" }}>
-              <div style={{ fontSize: "12px", fontWeight: 500, opacity: .8, marginBottom: "10px" }}>{m.label}</div>
-              <div style={{ fontSize: "34px", fontWeight: 700, lineHeight: 1 }}>{loading ? "—" : m.value}</div>
-              <div style={{ fontSize: "11px", opacity: .7, marginTop: "4px" }}>{m.sub}</div>
-              <div style={{ position: "absolute", right: "-10px", bottom: "-10px", width: "70px", height: "70px", borderRadius: "50%", background: "rgba(255,255,255,.1)" }} />
-              <div style={{ position: "absolute", right: "20px", bottom: "20px", width: "40px", height: "40px", borderRadius: "50%", background: "rgba(255,255,255,.1)" }} />
+        {/* KPIs */}
+        <div style={S.grid4}>
+          <KpiCard label="Carteira total" value={counts.total} sub="clientes ativos" accent="#1d4ed8" border="#1d4ed8"
+            icon={<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+          />
+          <KpiCard label="Críticos" value={counts.critico} sub="precisam de contato urgente" accent="#dc2626" border="#dc2626"
+            icon={<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+          />
+          <KpiCard label="Em atenção" value={counts.atencao} sub="acompanhamento próximo" accent="#d97706" border="#d97706"
+            icon={<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+          />
+          <KpiCard label="Follow-ups" value={totalFollowups} sub="pendentes na carteira" accent="#7c3aed" border="#7c3aed"
+            icon={<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>}
+          />
+        </div>
+
+        {/* Middle row: donut + critical alerts */}
+        <div style={S.grid3}>
+
+          {/* Health donut */}
+          <div style={{ ...S.card, ...S.cardPad }}>
+            <div style={S.cardTitle}>
+              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              Saúde da Carteira
             </div>
-          ))}
-        </div>
-
-        {/* Toolbar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-            {(Object.keys(filterLabels) as Filter[]).map((f) => (
-              <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: 500, cursor: "pointer", border: filter === f ? "none" : "1px solid #e2e8f0", background: filter === f ? "#0f172a" : "#fff", color: filter === f ? "#fff" : "#64748b", transition: "all .15s" }}>
-                {filterLabels[f]}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "7px 12px" }}>
-            <svg width="13" height="13" fill="none" stroke="#94a3b8" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar cliente..." style={{ border: "none", outline: "none", fontSize: "13px", color: "#0f172a", background: "transparent", width: "200px" }} />
-          </div>
-        </div>
-
-        {/* Table */}
-        <div style={{ background: "#fff", border: "1px solid #e8eaed", borderRadius: "12px", overflow: "hidden" }}>
-          {/* Header */}
-          <div style={{ display: "grid", gridTemplateColumns: "2fr .7fr .9fr .7fr .3fr", padding: "11px 20px", background: "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>
-            {["Cliente", "Segmento", "Dias sem orientação", "Status", ""].map((h) => (
-              <div key={h} style={{ fontSize: "10px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: ".06em" }}>{h}</div>
-            ))}
-          </div>
-
-          {error ? (
-            <div style={{ padding: "48px", textAlign: "center", color: "#ef4444", fontSize: "14px" }}>Erro ao carregar: {error}</div>
-          ) : loading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr .7fr .9fr .7fr .3fr", padding: "15px 20px", borderBottom: "1px solid #f8fafc", alignItems: "center" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <div style={{ height: "13px", width: "160px", background: "#f1f5f9", borderRadius: "4px" }} />
-                  <div style={{ height: "11px", width: "100px", background: "#f8fafc", borderRadius: "4px" }} />
-                </div>
-                <div style={{ height: "22px", width: "70px", background: "#f1f5f9", borderRadius: "20px" }} />
-                <div style={{ height: "20px", width: "40px", background: "#f1f5f9", borderRadius: "4px" }} />
-                <div style={{ height: "22px", width: "80px", background: "#f1f5f9", borderRadius: "20px" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "32px" }}>
+              {/* SVG Donut */}
+              <div style={{ flexShrink: 0, position: "relative" }}>
+                <svg width="140" height="140" viewBox="0 0 120 120">
+                  {/* Track */}
+                  <circle cx="60" cy="60" r={r} fill="none" stroke="#f3f4f6" strokeWidth="14"/>
+                  {/* Verde */}
+                  {counts.verde > 0 && (
+                    <circle cx="60" cy="60" r={r} fill="none" stroke="#16a34a" strokeWidth="14"
+                      strokeDasharray={`${verdeLen} ${circ}`}
+                      strokeDashoffset={startOffset}
+                      strokeLinecap="butt" style={{ transition: "stroke-dasharray .6s ease" }}/>
+                  )}
+                  {/* Atencao */}
+                  {counts.atencao > 0 && (
+                    <circle cx="60" cy="60" r={r} fill="none" stroke="#d97706" strokeWidth="14"
+                      strokeDasharray={`${atencaoLen} ${circ}`}
+                      strokeDashoffset={startOffset - verdeLen}
+                      strokeLinecap="butt" style={{ transition: "stroke-dasharray .6s ease" }}/>
+                  )}
+                  {/* Critico */}
+                  {counts.critico > 0 && (
+                    <circle cx="60" cy="60" r={r} fill="none" stroke="#dc2626" strokeWidth="14"
+                      strokeDasharray={`${criticoLen} ${circ}`}
+                      strokeDashoffset={startOffset - verdeLen - atencaoLen}
+                      strokeLinecap="butt" style={{ transition: "stroke-dasharray .6s ease" }}/>
+                  )}
+                  {/* Center label */}
+                  <text x="60" y="55" textAnchor="middle" fontSize="22" fontWeight="800" fill="#111827">{loading ? "—" : counts.total}</text>
+                  <text x="60" y="70" textAnchor="middle" fontSize="9" fill="#9ca3af" fontWeight="500">CLIENTES</text>
+                </svg>
               </div>
-            ))
-          ) : paginados.length === 0 ? (
-            <div style={{ padding: "64px", textAlign: "center", color: "#94a3b8", fontSize: "14px" }}>Nenhum cliente encontrado.</div>
-          ) : (
-            paginados.map((r, idx) => {
-              const targetId = r.id ?? r.cliente_id;
-              const dias = r.dias_sem_orientacao ?? 0;
-              const goRadar = () => targetId != null && navigate(`/radar/${targetId}`);
-              return (
-                <div key={String(targetId ?? idx)} onClick={goRadar} style={{ display: "grid", gridTemplateColumns: "2fr .7fr .9fr .7fr .3fr", padding: "14px 20px", borderBottom: idx < paginados.length - 1 ? "1px solid #f8fafc" : "none", alignItems: "center", cursor: "pointer", transition: "background .1s" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "#fafbff")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.razao_social ?? "Cliente sem razão social"}</div>
-                    {r.nome_fantasia && r.nome_fantasia !== r.razao_social && (
-                      <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.nome_fantasia}</div>
-                    )}
-                  </div>
-                  <div>
-                    {r.segmento ? (
-                      <span style={{ display: "inline-block", padding: "3px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: 500, background: "#f1f5f9", color: "#475569" }}>{r.segmento}</span>
-                    ) : <span style={{ color: "#cbd5e1", fontSize: "12px" }}>—</span>}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-                    <span style={{ fontSize: "20px", fontWeight: 700, color: diasColor(dias) }}>{dias}</span>
-                    <span style={{ fontSize: "11px", color: "#94a3b8" }}>dias</span>
-                  </div>
-                  <div>
-                    <StatusBadge status={r.semaforo} />
-                  </div>
-                  <div>
-                    <div onClick={(e) => { e.stopPropagation(); goRadar(); }} style={{ width: "28px", height: "28px", border: "1px solid #e2e8f0", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "#fff", color: "#64748b" }}>
-                      <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+
+              {/* Legend */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
+                {[
+                  { label: "Em dia", value: counts.verde, color: "#16a34a", bg: "#f0fdf4" },
+                  { label: "Em atenção", value: counts.atencao, color: "#d97706", bg: "#fffbeb" },
+                  { label: "Críticos", value: counts.critico, color: "#dc2626", bg: "#fef2f2" },
+                ].map(item => (
+                  <div key={item.label}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: item.color }} />
+                        <span style={{ fontSize: "12px", color: "#374151" }}>{item.label}</span>
+                      </div>
+                      <span style={{ fontSize: "12px", fontWeight: 700, color: item.color }}>{loading ? "—" : item.value}</span>
+                    </div>
+                    <div style={{ height: "4px", background: "#f3f4f6", borderRadius: "2px", overflow: "hidden" }}>
+                      <div style={{ height: "100%", background: item.color, borderRadius: "2px", width: loading || counts.total === 0 ? "0%" : `${(item.value / counts.total) * 100}%`, transition: "width .6s ease" }} />
                     </div>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Footer */}
-        {!loading && !error && filtered.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "14px" }}>
-            <span style={{ fontSize: "12px", color: "#94a3b8" }}>
-              {filtered.length === 0 ? "Nenhum cliente" : `Mostrando ${(pagina - 1) * POR_PAGINA + 1}–${Math.min(pagina * POR_PAGINA, filtered.length)} de ${filtered.length} clientes`}
-            </span>
-            {totalPaginas > 1 && (
-              <div style={{ display: "flex", gap: "4px" }}>
-                <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1} style={{ width: "28px", height: "28px", border: "1px solid #e2e8f0", borderRadius: "6px", background: "#fff", cursor: "pointer", color: "#64748b", fontSize: "13px", opacity: pagina === 1 ? .4 : 1 }}>‹</button>
-                {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(p => (
-                  <button key={p} onClick={() => setPagina(p)} style={{ width: "28px", height: "28px", border: "1px solid #e2e8f0", borderRadius: "6px", background: p === pagina ? "#10b981" : "#fff", color: p === pagina ? "#fff" : "#64748b", cursor: "pointer", fontSize: "12px", fontWeight: p === pagina ? 600 : 400, borderColor: p === pagina ? "#10b981" : "#e2e8f0" }}>{p}</button>
                 ))}
-                <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas} style={{ width: "28px", height: "28px", border: "1px solid #e2e8f0", borderRadius: "6px", background: "#fff", cursor: "pointer", color: "#64748b", fontSize: "13px", opacity: pagina === totalPaginas ? .4 : 1 }}>›</button>
+
+                <div style={{ marginTop: "8px", padding: "10px 12px", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+                  <div style={{ fontSize: "11px", color: "#6b7280", marginBottom: "2px" }}>Taxa de saúde</div>
+                  <div style={{ fontSize: "18px", fontWeight: 800, color: "#16a34a" }}>
+                    {loading || counts.total === 0 ? "—" : `${Math.round((counts.verde / counts.total) * 100)}%`}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Clients needing attention */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+
+            {/* Critical */}
+            <div style={{ ...S.card, flex: 1 }}>
+              <div style={{ padding: "14px 16px", borderBottom: "1px solid #fef2f2", background: "#fff8f8", borderRadius: "10px 10px 0 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ ...S.cardTitle, marginBottom: 0, color: "#dc2626" }}>
+                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Contato urgente
+                </div>
+                <span style={{ fontSize: "10px", fontWeight: 700, background: "#dc2626", color: "#fff", borderRadius: "10px", padding: "2px 7px" }}>{counts.critico}</span>
+              </div>
+              {loading ? (
+                <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {[1,2,3].map(i => <div key={i} style={{ height: "32px", background: "#f3f4f6", borderRadius: "6px" }} />)}
+                </div>
+              ) : criticalClients.length === 0 ? (
+                <div style={{ padding: "20px 16px", textAlign: "center", color: "#9ca3af", fontSize: "12px" }}>Nenhum cliente crítico</div>
+              ) : (
+                <div>
+                  {criticalClients.map((r, i) => {
+                    const id = r.id ?? r.cliente_id;
+                    return (
+                      <div key={String(id ?? i)} onClick={() => id != null && navigate(`/radar/${id}`)}
+                        style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", borderBottom: i < criticalClients.length - 1 ? "1px solid #fef2f2" : "none", cursor: "pointer" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#fff8f8"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <div style={{ width: "30px", height: "30px", borderRadius: "7px", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#dc2626", flexShrink: 0 }}>
+                          {nameInitials(r.razao_social)}
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: "12px", fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.razao_social ?? "—"}</div>
+                          {r.segmento && <div style={{ fontSize: "10px", color: "#9ca3af" }}>{r.segmento}</div>}
+                        </div>
+                        <div style={{ fontSize: "11px", fontWeight: 700, color: "#dc2626", whiteSpace: "nowrap", flexShrink: 0 }}>{r.dias_sem_orientacao}d</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Attention */}
+            {atencaoClients.length > 0 && (
+              <div style={{ ...S.card }}>
+                <div style={{ padding: "12px 16px", borderBottom: "1px solid #fffbeb", background: "#fffdf0", borderRadius: "10px 10px 0 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ ...S.cardTitle, marginBottom: 0, color: "#d97706" }}>
+                    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Em atenção
+                  </div>
+                  <span style={{ fontSize: "10px", fontWeight: 700, background: "#d97706", color: "#fff", borderRadius: "10px", padding: "2px 7px" }}>{counts.atencao}</span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", padding: "12px 16px" }}>
+                  {atencaoClients.map((r, i) => {
+                    const id = r.id ?? r.cliente_id;
+                    return (
+                      <div key={String(id ?? i)} onClick={() => id != null && navigate(`/radar/${id}`)}
+                        title={r.razao_social ?? ""}
+                        style={{ display: "flex", alignItems: "center", gap: "5px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "6px", padding: "4px 8px", cursor: "pointer", fontSize: "11px", fontWeight: 500, color: "#92400e" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#fef3c7"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#fffbeb"}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>{r.razao_social ?? "—"}</span>
+                        <span style={{ background: "#f59e0b", color: "#fff", borderRadius: "4px", padding: "1px 4px", fontSize: "10px", fontWeight: 700, flexShrink: 0 }}>{r.dias_sem_orientacao}d</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
 
-      <NovoClienteModal open={novoOpen} onOpenChange={setNovoOpen} onSaved={() => setReloadKey((k) => k + 1)} />
+        {/* Bottom row: segmentos + quick actions */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+
+          {/* Segmentos */}
+          {segmentos.length > 0 && (
+            <div style={{ ...S.card, ...S.cardPad }}>
+              <div style={S.cardTitle}>
+                <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Distribuição por Segmento
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {segmentos.map(([seg, count]) => (
+                  <div key={seg}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "12px", color: "#374151", fontWeight: 500 }}>{seg}</span>
+                      <span style={{ fontSize: "12px", color: "#6b7280" }}>{count} cliente{count !== 1 ? "s" : ""}</span>
+                    </div>
+                    <div style={{ height: "5px", background: "#f3f4f6", borderRadius: "3px", overflow: "hidden" }}>
+                      <div style={{ height: "100%", background: "#1d4ed8", borderRadius: "3px", width: `${(count / counts.total) * 100}%`, opacity: 0.7 + (count / counts.total) * 0.3, transition: "width .6s ease" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick access */}
+          <div style={{ ...S.card, ...S.cardPad }}>
+            <div style={S.cardTitle}>
+              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Acesso Rápido
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              {[
+                { label: "Ver todos os clientes", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", path: "/clientes", color: "#1d4ed8" },
+                { label: "Registrar orientação", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8", path: "/", color: "#16a34a" },
+                { label: "Follow-ups pendentes", icon: "M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11", path: "/", color: "#7c3aed" },
+                { label: "Administração", icon: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z", path: "/admin", color: "#374151" },
+              ].map(a => (
+                <button key={a.label} onClick={() => navigate(a.path)}
+                  style={{ display: "flex", alignItems: "center", gap: "9px", padding: "12px 14px", border: "1px solid #e5e7eb", borderRadius: "8px", background: "#fff", cursor: "pointer", textAlign: "left" as const }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}>
+                  <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: `${a.color}12`, display: "flex", alignItems: "center", justifyContent: "center", color: a.color, flexShrink: 0 }}>
+                    <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d={a.icon}/></svg>
+                  </div>
+                  <span style={{ fontSize: "12px", fontWeight: 500, color: "#374151", lineHeight: 1.3 }}>{a.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* New client shortcut */}
+            <button onClick={() => setNovoOpen(true)}
+              style={{ width: "100%", marginTop: "10px", padding: "11px", border: "1px dashed #93c5fd", borderRadius: "8px", background: "#eff6ff", cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#dbeafe"}
+              onMouseLeave={e => e.currentTarget.style.background = "#eff6ff"}>
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              Cadastrar novo cliente
+            </button>
+          </div>
+        </div>
+
+      </main>
+
+      {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 29 }} />}
+      <NovoClienteModal open={novoOpen} onOpenChange={setNovoOpen} onSaved={() => setReloadKey(k => k + 1)} />
     </div>
   );
 }

@@ -1,9 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { UserMenu } from "@/components/UserMenu";
-import { Card } from "@/components/ui/card";
-import { ArrowLeft, Loader2, Trash2, Pencil, X, Check } from "lucide-react";
+import { Loader2, Trash2, Pencil, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Usuario {
@@ -51,6 +49,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 export default function Admin() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("usuarios");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +66,13 @@ export default function Admin() {
   const [metas, setMetas] = useState<Meta[]>([]);
   const [loadingMetas, setLoadingMetas] = useState(false);
   const [exportando, setExportando] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setUserEmail(data.user.email);
+    });
+  }, []);
 
   const inputClass = "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
   const labelClass = "block text-xs font-medium text-gray-600 mb-1";
@@ -191,40 +197,94 @@ export default function Admin() {
     setExportando("");
   };
 
+  /* ── helpers de card ── */
+  const card: React.CSSProperties = { background: "#fff", border: "1px solid #e8eaed", borderRadius: "12px", overflow: "hidden" };
+  const cardPad: React.CSSProperties = { ...card, padding: "24px" };
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 border-b border-border/60 bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Voltar ao dashboard
-          </Link>
-          <div className="flex items-center gap-4">
-            <img src="/logo_freitas.png" alt="" style={{ height: "44px", objectFit: "contain" }} />
-            <UserMenu />
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f0f4ff" }}>
+
+      {/* Sidebar */}
+      <aside style={{ width: "220px", background: "#0f172a", display: "flex", flexDirection: "column", flexShrink: 0, position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 20 }}>
+        <div style={{ padding: "20px", borderBottom: "1px solid rgba(255,255,255,.08)", marginBottom: "8px" }}>
+          <img src="/logo_freitas.png" alt="" style={{ height: "36px", objectFit: "contain", filter: "brightness(0) invert(1)", opacity: 0.9 }} />
+          <div style={{ fontSize: "11px", color: "rgba(255,255,255,.4)", marginTop: "6px" }}>CRM Consultivo</div>
+        </div>
+
+        <nav style={{ flex: 1, padding: "4px 0" }}>
+          <div style={{ fontSize: "10px", color: "rgba(255,255,255,.3)", padding: "10px 20px 4px", textTransform: "uppercase", letterSpacing: ".08em" }}>Principal</div>
+          {[
+            { label: "Dashboard", path: "/" },
+            { label: "Clientes", path: "/" },
+            { label: "Orientações", path: "/", badge: "12" },
+            { label: "Follow-ups", path: "/", badge: "5" },
+          ].map((item) => (
+            <div key={item.label} onClick={() => navigate(item.path)} style={{ padding: "8px 20px", fontSize: "13px", color: "rgba(255,255,255,.55)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "2px solid transparent" }}>
+              {item.label}
+              {(item as any).badge && <span style={{ background: "#ef4444", color: "#fff", borderRadius: "20px", fontSize: "9px", fontWeight: 600, padding: "1px 6px" }}>{(item as any).badge}</span>}
+            </div>
+          ))}
+
+          <div style={{ fontSize: "10px", color: "rgba(255,255,255,.3)", padding: "14px 20px 4px", textTransform: "uppercase", letterSpacing: ".08em" }}>Gestão</div>
+          {[
+            { label: "Relatórios", path: "/" },
+            { label: "Metas", path: "/" },
+            { label: "Administração", path: "/admin", active: true },
+          ].map((item) => (
+            <div key={item.label} onClick={() => navigate(item.path)} style={{ padding: "8px 20px", fontSize: "13px", color: (item as any).active ? "#fff" : "rgba(255,255,255,.55)", cursor: "pointer", borderLeft: (item as any).active ? "2px solid #10b981" : "2px solid transparent", background: (item as any).active ? "rgba(255,255,255,.06)" : "transparent", fontWeight: (item as any).active ? 500 : 400 }}>
+              {item.label}
+            </div>
+          ))}
+        </nav>
+
+        <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,.08)", display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#059669)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 600, color: "#fff", flexShrink: 0 }}>
+            {userEmail ? userEmail.split("@")[0].slice(0, 2).toUpperCase() : "TF"}
           </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: "12px", fontWeight: 500, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail || "Usuário"}</div>
+            <div style={{ fontSize: "10px", color: "rgba(255,255,255,.4)" }}>Administrador</div>
+          </div>
+          <button
+            onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+            title="Sair"
+            style={{ background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,.4)", padding: "4px", display: "flex", alignItems: "center", flexShrink: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+            onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,.4)")}
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
         </div>
-      </header>
+      </aside>
 
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold tracking-tight">Administração</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Gerencie usuários, logs e metas do escritório.</p>
+      {/* Main */}
+      <div style={{ marginLeft: "220px", flex: 1, padding: "28px" }}>
+
+        {/* Top */}
+        <div style={{ marginBottom: "24px" }}>
+          <h1 style={{ fontSize: "20px", fontWeight: 600, color: "#0f172a", margin: 0 }}>Administração</h1>
+          <p style={{ fontSize: "13px", color: "#64748b", marginTop: "3px" }}>Gerencie usuários, logs e metas do escritório.</p>
         </div>
 
-        <div className="flex gap-1 border-b border-border/60 mb-6 overflow-x-auto">
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #e8eaed", marginBottom: "24px", overflowX: "auto" }}>
           {TABS.map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-4 py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors ${tab === t.key ? "border-green-600 text-green-700 font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: "10px 18px", fontSize: "13px", fontWeight: tab === t.key ? 600 : 400, color: tab === t.key ? "#10b981" : "#64748b", background: "none", border: "none", borderBottom: tab === t.key ? "2px solid #10b981" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap", marginBottom: "-1px" }}>
               {t.label}
             </button>
           ))}
         </div>
 
+        {/* ── ABA: USUÁRIOS ── */}
         {tab === "usuarios" && (
           <>
-            <Card className="p-6 mb-6 border-border/60 shadow-none">
-              <h3 className="text-base font-semibold mb-4">Novo usuário</h3>
-              <form onSubmit={handleCriar} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div style={{ ...cardPad, marginBottom: "16px" }}>
+              <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Novo usuário</h3>
+              <form onSubmit={handleCriar} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <div><label className={labelClass}>Nome</label><input className={inputClass} value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome completo" /></div>
                 <div><label className={labelClass}>E-mail</label><input className={inputClass} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@exemplo.com" /></div>
                 <div><label className={labelClass}>Senha inicial</label><input className={inputClass} type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="Mínimo 6 caracteres" minLength={6} /></div>
@@ -234,59 +294,67 @@ export default function Admin() {
                     <option value="admin">Administrador</option>
                   </select>
                 </div>
-                <div className="sm:col-span-2 flex justify-end">
-                  <button type="submit" disabled={saving} className="rounded-md bg-green-600 px-5 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">
-                    {saving && <Loader2 className="h-4 w-4 animate-spin" />} Criar usuário
+                <div style={{ gridColumn: "span 2", display: "flex", justifyContent: "flex-end" }}>
+                  <button type="submit" disabled={saving} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 20px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", opacity: saving ? .6 : 1 }}>
+                    {saving && <Loader2 size={14} className="animate-spin" />} Criar usuário
                   </button>
                 </div>
               </form>
-            </Card>
+            </div>
 
-            <Card className="overflow-hidden border-border/60 shadow-none">
-              <div className="px-6 py-4 border-b border-border/60"><h3 className="text-base font-semibold">Usuários cadastrados</h3></div>
-              {loading ? <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
-                : usuarios.length === 0 ? <div className="p-8 text-center text-sm text-muted-foreground">Nenhum usuário cadastrado.</div>
-                : <ul className="divide-y divide-border/60">
-                  {usuarios.map((u) => (
-                    <li key={u.id} className="px-6 py-4">
+            <div style={card}>
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: 0 }}>Usuários cadastrados</h3>
+              </div>
+              {loading
+                ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Carregando...</div>
+                : usuarios.length === 0
+                  ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Nenhum usuário cadastrado.</div>
+                  : usuarios.map((u, idx) => (
+                    <div key={u.id} style={{ padding: "14px 20px", borderBottom: idx < usuarios.length - 1 ? "1px solid #f1f5f9" : "none" }}>
                       {editando?.id === u.id ? (
-                        <div className="flex items-center gap-3 flex-wrap">
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                           <input className="rounded border border-gray-300 px-2 py-1 text-sm w-40" value={editando.nome} onChange={e => setEditando({ ...editando, nome: e.target.value })} />
                           <select className="rounded border border-gray-300 px-2 py-1 text-sm" value={editando.role ?? "colaborador"} onChange={e => setEditando({ ...editando, role: e.target.value })}>
                             <option value="colaborador">Colaborador</option>
                             <option value="admin">Administrador</option>
                           </select>
-                          <button onClick={handleSalvarEdicao} disabled={saving} className="text-green-600 hover:text-green-800"><Check className="h-4 w-4" /></button>
-                          <button onClick={() => setEditando(null)} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
+                          <button onClick={handleSalvarEdicao} disabled={saving} style={{ background: "none", border: "none", cursor: "pointer", color: "#10b981", display: "flex" }}><Check size={16} /></button>
+                          <button onClick={() => setEditando(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex" }}><X size={16} /></button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold flex-shrink-0">{initials(u.nome)}</div>
-                            <div><p className="text-sm font-medium">{u.nome}</p><p className="text-xs text-muted-foreground">{u.email}</p></div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#059669)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 600, color: "#fff", flexShrink: 0 }}>{initials(u.nome)}</div>
+                            <div>
+                              <div style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>{u.nome}</div>
+                              <div style={{ fontSize: "11px", color: "#94a3b8" }}>{u.email}</div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            {u.role && <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">{u.role === "admin" ? "Administrador" : "Colaborador"}</span>}
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${u.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{u.ativo ? "Ativo" : "Inativo"}</span>
-                            <button onClick={() => setEditando(u)} className="text-gray-400 hover:text-gray-600"><Pencil className="h-4 w-4" /></button>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            {u.role && <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "20px", background: "#dbeafe", color: "#1d4ed8", fontWeight: 500 }}>{u.role === "admin" ? "Administrador" : "Colaborador"}</span>}
+                            <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "20px", fontWeight: 500, background: u.ativo ? "#dcfce7" : "#f1f5f9", color: u.ativo ? "#16a34a" : "#64748b" }}>{u.ativo ? "Ativo" : "Inativo"}</span>
+                            <button onClick={() => setEditando(u)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex" }} onMouseEnter={e => (e.currentTarget.style.color = "#475569")} onMouseLeave={e => (e.currentTarget.style.color = "#94a3b8")}><Pencil size={14} /></button>
                             {u.ativo
-                              ? <button onClick={() => handleDesativar(u.id)} className="text-red-400 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
-                              : <button onClick={() => handleAtivar(u.id)} className="text-green-400 hover:text-green-600 text-xs font-medium">Ativar</button>}
+                              ? <button onClick={() => handleDesativar(u.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#fca5a5", display: "flex" }} onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")} onMouseLeave={e => (e.currentTarget.style.color = "#fca5a5")}><Trash2 size={14} /></button>
+                              : <button onClick={() => handleAtivar(u.id)} style={{ background: "none", border: "1px solid #10b981", borderRadius: "6px", cursor: "pointer", color: "#10b981", fontSize: "11px", fontWeight: 500, padding: "2px 8px" }}>Ativar</button>
+                            }
                           </div>
                         </div>
                       )}
-                    </li>
-                  ))}
-                </ul>}
-            </Card>
+                    </div>
+                  ))
+              }
+            </div>
           </>
         )}
 
+        {/* ── ABA: LOG ── */}
         {tab === "log" && (
-          <Card className="overflow-hidden border-border/60 shadow-none">
-            <div className="px-6 py-4 border-b border-border/60 flex items-center justify-between flex-wrap gap-3">
-              <h3 className="text-base font-semibold">Log de atividades</h3>
-              <div className="flex gap-2">
+          <div style={card}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+              <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: 0 }}>Log de atividades</h3>
+              <div style={{ display: "flex", gap: "8px" }}>
                 <select className="rounded border border-gray-300 px-2 py-1 text-xs" value={filtroUser} onChange={e => setFiltroUser(e.target.value)}>
                   <option value="">Todos os colaboradores</option>
                   {usuarios.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
@@ -298,82 +366,89 @@ export default function Admin() {
                 </select>
               </div>
             </div>
-            {loadingLog ? <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
-              : logs.length === 0 ? <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma atividade no período.</div>
-              : <ul className="divide-y divide-border/60">
-                {logs.map((l) => (
-                  <li key={l.id} className="flex gap-3 px-6 py-3">
-                    <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+            {loadingLog
+              ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Carregando...</div>
+              : logs.length === 0
+                ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Nenhuma atividade no período.</div>
+                : logs.map((l, idx) => (
+                  <div key={l.id} style={{ display: "flex", gap: "12px", padding: "12px 20px", borderBottom: idx < logs.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981", marginTop: "5px", flexShrink: 0 }} />
                     <div>
-                      <span className="text-sm font-medium">{l.usuario_nome}</span>
-                      <span className="text-sm text-muted-foreground"> — {l.acao}</span>
-                      <p className="text-xs text-muted-foreground mt-0.5">{new Date(l.created_at).toLocaleString("pt-BR")}</p>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>{l.usuario_nome}</span>
+                      <span style={{ fontSize: "13px", color: "#64748b" }}> — {l.acao}</span>
+                      <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>{new Date(l.created_at).toLocaleString("pt-BR")}</div>
                     </div>
-                  </li>
-                ))}
-              </ul>}
-          </Card>
+                  </div>
+                ))
+            }
+          </div>
         )}
 
+        {/* ── ABA: RELATÓRIOS ── */}
         {tab === "relatorios" && (
-          <Card className="p-6 border-border/60 shadow-none">
-            <h3 className="text-base font-semibold mb-4">Exportar relatórios</h3>
-            <div className="flex flex-col gap-3">
+          <div style={cardPad}>
+            <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Exportar relatórios</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {[
                 { tipo: "clientes", titulo: "Lista de clientes", desc: "Razão social, CNPJ, segmento, regime tributário" },
                 { tipo: "orientacoes", titulo: `Orientações de ${MES_ATUAL}/${ANO_ATUAL}`, desc: "Tema, problema, ação, responsável, status" },
               ].map((r) => (
-                <div key={r.tipo} className="flex items-center justify-between p-4 border border-border/60 rounded-lg">
-                  <div><p className="text-sm font-medium">{r.titulo}</p><p className="text-xs text-muted-foreground mt-0.5">{r.desc}</p></div>
-                  <button onClick={() => exportarCSV(r.tipo)} disabled={exportando === r.tipo} className="rounded-md border border-gray-300 px-4 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2">
-                    {exportando === r.tipo && <Loader2 className="h-3 w-3 animate-spin" />} Exportar CSV
+                <div key={r.tipo} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", border: "1px solid #e8eaed", borderRadius: "10px" }}>
+                  <div>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>{r.titulo}</div>
+                    <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>{r.desc}</div>
+                  </div>
+                  <button onClick={() => exportarCSV(r.tipo)} disabled={exportando === r.tipo} style={{ border: "1px solid #e2e8f0", background: "#fff", borderRadius: "8px", padding: "7px 16px", fontSize: "12px", fontWeight: 500, color: "#475569", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", opacity: exportando === r.tipo ? .6 : 1 }}>
+                    {exportando === r.tipo && <Loader2 size={12} className="animate-spin" />} Exportar CSV
                   </button>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         )}
 
+        {/* ── ABA: METAS ── */}
         {tab === "metas" && (
-          <Card className="overflow-hidden border-border/60 shadow-none">
-            <div className="px-6 py-4 border-b border-border/60 flex items-center justify-between">
+          <div style={card}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <h3 className="text-base font-semibold">Metas de {MES_ATUAL}/{ANO_ATUAL}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Orientações por colaborador no mês</p>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>Metas de {MES_ATUAL}/{ANO_ATUAL}</div>
+                <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>Orientações por colaborador no mês</div>
               </div>
-              <button onClick={handleSalvarMetas} disabled={saving} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />} Salvar metas
+              <button onClick={handleSalvarMetas} disabled={saving} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 18px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", opacity: saving ? .6 : 1 }}>
+                {saving && <Loader2 size={14} className="animate-spin" />} Salvar metas
               </button>
             </div>
-            {loadingMetas ? <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
-              : metas.length === 0 ? <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma meta configurada ainda.</div>
-              : <ul className="divide-y divide-border/60">
-                {metas.map((m, i) => {
+            {loadingMetas
+              ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Carregando...</div>
+              : metas.length === 0
+                ? <div style={{ padding: "48px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>Nenhuma meta configurada ainda.</div>
+                : metas.map((m, i) => {
                   const pct = m.meta > 0 ? Math.min(100, Math.round(((m.realizado ?? 0) / m.meta) * 100)) : 0;
-                  const cor = pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-amber-400" : "bg-red-400";
+                  const barColor = pct >= 80 ? "#10b981" : pct >= 50 ? "#f59e0b" : "#ef4444";
                   return (
-                    <li key={m.usuario_id} className="flex items-center gap-4 px-6 py-4">
-                      <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold flex-shrink-0">{initials(m.usuario_nome)}</div>
-                      <span className="text-sm w-32 flex-shrink-0">{m.usuario_nome}</span>
-                      <div className="flex-1 flex items-center gap-3">
-                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${cor}`} style={{ width: `${pct}%` }} />
+                    <div key={m.usuario_id} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 20px", borderBottom: i < metas.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                      <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#059669)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 600, color: "#fff", flexShrink: 0 }}>{initials(m.usuario_nome)}</div>
+                      <span style={{ fontSize: "13px", color: "#0f172a", width: "120px", flexShrink: 0 }}>{m.usuario_nome}</span>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{ flex: 1, height: "6px", background: "#f1f5f9", borderRadius: "20px", overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: "20px", background: barColor, width: `${pct}%`, transition: "width .3s" }} />
                         </div>
-                        <span className="text-xs text-muted-foreground min-w-[56px] text-right">{m.realizado ?? 0} / {m.meta}</span>
+                        <span style={{ fontSize: "11px", color: "#94a3b8", minWidth: "56px", textAlign: "right" }}>{m.realizado ?? 0} / {m.meta}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#64748b" }}>
                         <span>Meta:</span>
-                        <input type="number" min={1} max={999} className="w-14 h-7 rounded border border-gray-300 text-center text-sm" value={m.meta}
+                        <input type="number" min={1} max={999} style={{ width: "52px", height: "28px", border: "1px solid #e2e8f0", borderRadius: "6px", textAlign: "center", fontSize: "13px", outline: "none" }} value={m.meta}
                           onChange={e => { const updated = [...metas]; updated[i] = { ...m, meta: Number(e.target.value) }; setMetas(updated); }} />
                         <span>/mês</span>
                       </div>
-                    </li>
+                    </div>
                   );
-                })}
-              </ul>}
-          </Card>
+                })
+            }
+          </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
