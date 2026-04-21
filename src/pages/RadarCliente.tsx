@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import {
   supabase,
   type AcaoConsultivaRow,
@@ -60,6 +61,7 @@ export default function RadarCliente() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -123,21 +125,72 @@ export default function RadarCliente() {
 
   const saveEdit = async () => {
     setSaving(true);
-    const realId = (cliente as any)?.cliente_id ?? (cliente as any)?.id ?? clienteId;
-    await supabase.from("clientes").update({
-      razao_social: editForm.razao_social,
-      nome_fantasia: editForm.nome_fantasia || null,
-      segmento: editForm.segmento || null,
-      uf: editForm.uf || null,
-      regime_tributario: editForm.regime_tributario || null,
-      porte: editForm.porte || null,
-      canal_preferido: editForm.canal_preferido || null,
-      frequencia_contato_dias: editForm.frequencia_contato_dias,
-      dores_mapeadas: editForm.dores_mapeadas || null,
-      objetivos_empresario: editForm.objetivos_empresario || null,
-      observacoes: editForm.observacoes || null,
-    }).eq("id", realId);
+
+    // Mesma sonda do fluxo de exclusão: testa candidatos via SELECT
+    // para confirmar qual campo/valor bate com a linha real na tabela clientes.
+    const candidatos = [
+      { campo: "id",         valor: (cliente as any)?.cliente_id },
+      { campo: "id",         valor: (cliente as any)?.id },
+      { campo: "id",         valor: clienteId },
+      { campo: "cliente_id", valor: (cliente as any)?.cliente_id },
+      { campo: "cliente_id", valor: (cliente as any)?.id },
+    ].filter((c): c is { campo: string; valor: string | number } => c.valor != null && c.valor !== "");
+
+    let campoConfirmado: string | null = null;
+    let idConfirmado: string | number | null = null;
+
+    for (const { campo, valor } of candidatos) {
+      const { data, error } = await supabase
+        .from("clientes")
+        .select("id")
+        .eq(campo, valor)
+        .maybeSingle();
+      if (!error && data) {
+        campoConfirmado = campo;
+        idConfirmado    = valor;
+        break;
+      }
+    }
+
+    if (!campoConfirmado || idConfirmado == null) {
+      setSaving(false);
+      toast({
+        title: "Não foi possível identificar o cliente para salvar.",
+        description: "Tente recarregar a página e tentar novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("clientes")
+      .update({
+        razao_social:           editForm.razao_social,
+        nome_fantasia:          editForm.nome_fantasia || null,
+        segmento:               editForm.segmento || null,
+        uf:                     editForm.uf || null,
+        regime_tributario:      editForm.regime_tributario || null,
+        porte:                  editForm.porte || null,
+        canal_preferido:        editForm.canal_preferido || null,
+        frequencia_contato_dias: editForm.frequencia_contato_dias,
+        dores_mapeadas:         editForm.dores_mapeadas || null,
+        objetivos_empresario:   editForm.objetivos_empresario || null,
+        observacoes:            editForm.observacoes || null,
+      })
+      .eq(campoConfirmado, idConfirmado);
+
     setSaving(false);
+
+    if (error) {
+      toast({
+        title: "Erro ao salvar alterações.",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({ title: "Alterações salvas com sucesso." });
     setEditOpen(false);
     load();
   };
