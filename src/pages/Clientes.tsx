@@ -111,46 +111,139 @@ export default function Clientes() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    // cliente_id é o FK real para a tabela clientes; id pode ser sintético na view
-    const id = deleteTarget.cliente_id ?? deleteTarget.id;
-    if (id == null) return;
 
     setDeleting(true);
     setDeleteError(null);
 
-    // 1. Excluir registros vinculados antes do cliente
-    const [{ error: errInteracoes }, { error: errAcoes }] = await Promise.all([
-      supabase.from("interacoes").delete().eq("cliente_id", id),
-      supabase.from("acoes_consultivas").delete().eq("cliente_id", id),
-    ]);
+    // ── DIAGNÓSTICO: inspecionar o objeto real vindo da view ──────────────────
+    console.group("[DELETE CLIENTE] diagnóstico");
+    console.log("deleteTarget (todos os campos):", JSON.stringify(deleteTarget, null, 2));
 
-    if (errInteracoes || errAcoes) {
-      const msg = errInteracoes?.message ?? errAcoes?.message ?? "Erro desconhecido";
+    // ── ETAPA 1: descobrir o ID real na tabela clientes ───────────────────────
+    // Tenta cada candidato contra SELECT na tabela clientes para confirmar qual
+    // campo/valor realmente bate com uma linha existente.
+    const candidatos = [
+      { campo: "id",         valor: deleteTarget.cliente_id },
+      { campo: "id",         valor: deleteTarget.id },
+      { campo: "cliente_id", valor: deleteTarget.cliente_id },
+      { campo: "cliente_id", valor: deleteTarget.id },
+    ].filter(c => c.valor != null);
+
+    console.log("candidatos de ID a testar:", candidatos);
+
+    let campoConfirmado: string | null = null;
+    let idConfirmado: string | number | null = null;
+
+    for (const { campo, valor } of candidatos) {
+      const { data, error } = await supabase
+        .from("clientes")
+        .select("*")
+        .eq(campo, valor!)
+        .maybeSingle();
+
+      console.log(`  SELECT clientes WHERE ${campo}=${valor} →`, error?.message ?? data);
+
+      if (!error && data) {
+        campoConfirmado = campo;
+        idConfirmado    = valor!;
+        console.log(`  ✅ linha confirmada! campo="${campo}" valor=${valor}`, data);
+        break;
+      }
+    }
+
+    if (campoConfirmado === null || idConfirmado === null) {
+      // Nenhum candidato achou a linha — expõe todos os dados para diagnóstico
+      const todosOsCampos = Object.entries(deleteTarget)
+        .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+        .join("\n");
+
+      console.error("[DELETE] cliente não localizado em nenhum candidato");
+      console.groupEnd();
       setDeleting(false);
-      setDeleteError(`Falha ao excluir registros vinculados: ${msg}`);
+      setDeleteError(
+        "Não foi possível localizar o cliente na tabela clientes.\n\n" +
+        "Candidatos testados:\n" +
+        candidatos.map(c => `  ${c.campo} = ${c.valor}`).join("\n") +
+        "\n\nCampos disponíveis no objeto da view:\n" +
+        todosOsCampos +
+        "\n\nVeja o console (F12) para detalhes completos."
+      );
       return;
     }
 
-    // 2. Excluir o cliente
-    const { error: errCliente, count } = await supabase
+    // ── ETAPA 2: descobrir tabelas vinculadas via information_schema ──────────
+    let tabelasVinculadas: string[] = [];
+    try {
+      const { data: schemaRows, error: schemaErr } = await (supabase as any)
+        .schema("information_schema")
+        .from("columns")
+        .select("table_name")
+        .eq("column_name", "cliente_id")
+        .eq("table_schema", "public");
+
+      if (schemaErr) {
+        console.warn("[SCHEMA] não acessível:", schemaErr.message);
+      } else {
+        tabelasVinculadas = (schemaRows ?? []).map((r: any) => r.table_name as string);
+        console.log("[SCHEMA] tabelas com cliente_id:", tabelasVinculadas);
+      }
+    } catch (e) {
+      console.warn("[SCHEMA] exceção:", e);
+    }
+
+    const todasTabelas = Array.from(
+      new Set(["interacoes", "acoes_consultivas", ...tabelasVinculadas])
+    );
+    console.log("[DELETE] limpando vínculos em:", todasTabelas);
+
+    // ── ETAPA 3: deletar vínculos ─────────────────────────────────────────────
+    for (const tabela of todasTabelas) {
+      const { error: err, count: cnt } = await (supabase as any)
+        .from(tabela)
+        .delete({ count: "exact" })
+        .eq("cliente_id", idConfirmado);
+
+      if (err) {
+        console.warn(`[DELETE] ${tabela} →`, err.message);
+      } else {
+        console.log(`[DELETE] ${tabela} → ${cnt ?? "?"} linha(s)`);
+      }
+    }
+
+    // ── ETAPA 4: deletar o cliente com o campo/valor confirmados ─────────────
+    console.log(`[DELETE] clientes WHERE ${campoConfirmado}=${idConfirmado}`);
+    const { error: errCliente, count: cntCliente } = await supabase
       .from("clientes")
       .delete({ count: "exact" })
-      .eq("id", id);
+      .eq(campoConfirmado, idConfirmado);
+
+    console.log("[DELETE] clientes →", { errCliente, cntCliente });
+    console.groupEnd();
 
     setDeleting(false);
 
     if (errCliente) {
-      setDeleteError(`Erro ao excluir cliente: ${errCliente.message}`);
+      setDeleteError(
+        `Erro ao excluir (${campoConfirmado}=${idConfirmado}):\n` +
+        `${errCliente.message}\n` +
+        `code: ${(errCliente as any).code ?? "—"}\n` +
+        `details: ${(errCliente as any).details ?? "—"}\n` +
+        `hint: ${(errCliente as any).hint ?? "—"}`
+      );
       return;
     }
 
-    if (count === 0) {
-      setDeleteError(`Nenhuma linha afetada. Verifique se o ID ${id} existe na tabela clientes.`);
+    if ((cntCliente ?? 0) === 0) {
+      setDeleteError(
+        `Delete executou sem erro mas afetou 0 linhas.\n` +
+        `Campo: ${campoConfirmado} | Valor: ${idConfirmado}\n` +
+        `Isso pode indicar uma política RLS que bloqueia silenciosamente.`
+      );
       return;
     }
 
-    // 3. Sucesso — atualiza a lista sem recarregar
-    setRows(prev => prev.filter(r => (r.cliente_id ?? r.id) !== id));
+    // ── ETAPA 5: sucesso ──────────────────────────────────────────────────────
+    setRows(prev => prev.filter(r => (r.cliente_id ?? r.id) !== idConfirmado));
     setDeleteTarget(null);
     setDeleteError(null);
     toast({ title: "Cliente excluído com sucesso." });
@@ -515,8 +608,9 @@ export default function Clientes() {
 
           {deleteError && (
             <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "10px 14px", marginTop: "4px" }}>
-              <div style={{ fontSize: "12px", fontWeight: 600, color: "#dc2626", marginBottom: "2px" }}>Erro ao excluir</div>
-              <div style={{ fontSize: "11px", color: "#b91c1c", fontFamily: "monospace", wordBreak: "break-all" }}>{deleteError}</div>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "#dc2626", marginBottom: "6px" }}>Erro ao excluir</div>
+              <pre style={{ fontSize: "11px", color: "#b91c1c", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all", margin: 0 }}>{deleteError}</pre>
+              <div style={{ fontSize: "10px", color: "#9ca3af", marginTop: "6px" }}>Veja o console do navegador (F12) para o diagnóstico completo.</div>
             </div>
           )}
 
