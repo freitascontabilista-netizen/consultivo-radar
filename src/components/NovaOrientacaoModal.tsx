@@ -39,6 +39,7 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [clientes, setClientes] = useState<ClienteOpt[]>([]);
+  const [loadingClientes, setLoadingClientes] = useState(false);
   const [clienteId, setClienteId] = useState<string>("");
   const [tipo, setTipo] = useState("fiscal");
   const [canal, setCanal] = useState("WhatsApp");
@@ -46,23 +47,35 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
   const [resumo, setResumo] = useState("");
   const [proximoPasso, setProximoPasso] = useState("");
 
-  useEffect(() => {
-    if (!open) return;
-    supabase
+  const fetchClientes = async () => {
+    setLoadingClientes(true);
+    const { data, error } = await supabase
       .from("clientes")
       .select("id, razao_social, nome_fantasia")
-      .order("razao_social", { ascending: true })
-      .then(({ data, error }) => {
-        if (error || !data) return;
-        const opts: ClienteOpt[] = data.map((r: any) => ({
-          id: r.id,
-          label: r.razao_social ?? r.nome_fantasia ?? String(r.id),
-        }));
-        setClientes(opts);
-        if (clienteIdPreSelected != null) {
-          setClienteId(String(clienteIdPreSelected));
-        }
-      });
+      .order("razao_social", { ascending: true });
+    setLoadingClientes(false);
+    if (error) {
+      console.error("[NovaOrientacaoModal] Erro ao buscar clientes:", error);
+      return;
+    }
+    if (!data || data.length === 0) {
+      console.warn("[NovaOrientacaoModal] Nenhum cliente retornado da tabela 'clientes'");
+      return;
+    }
+    const opts: ClienteOpt[] = data.map((r: any) => ({
+      id: r.id,
+      label: r.razao_social ?? r.nome_fantasia ?? String(r.id),
+    }));
+    setClientes(opts);
+  };
+
+  // Carrega na montagem do componente (eager load)
+  useEffect(() => { fetchClientes(); }, []);
+
+  // Retry se o modal abrir e a lista ainda estiver vazia
+  useEffect(() => {
+    if (open && clientes.length === 0) fetchClientes();
+    if (open && clienteIdPreSelected != null) setClienteId(String(clienteIdPreSelected));
   }, [open]);
 
   const reset = () => {
@@ -125,8 +138,10 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           <div className="space-y-1.5">
             <Label>Cliente</Label>
-            <Select value={clienteId} onValueChange={setClienteId} disabled={!!clienteIdPreSelected}>
-              <SelectTrigger><SelectValue placeholder="Selecione o cliente…" /></SelectTrigger>
+            <Select value={clienteId} onValueChange={setClienteId} disabled={!!clienteIdPreSelected || loadingClientes}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingClientes ? "Carregando clientes…" : clientes.length === 0 ? "Nenhum cliente encontrado" : "Selecione o cliente…"} />
+              </SelectTrigger>
               <SelectContent>
                 {clientes.map(c => (
                   <SelectItem key={String(c.id)} value={String(c.id)}>{c.label}</SelectItem>
