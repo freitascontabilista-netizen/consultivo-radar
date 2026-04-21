@@ -14,9 +14,22 @@ interface Props {
   onSaved?: () => void;
 }
 
-const REGIMES = ["MEI", "Simples Nacional", "Lucro Presumido", "Lucro Real", "Outro"];
-const PORTES = ["Micro", "Pequena", "Média", "Grande"];
-const CANAIS = ["WhatsApp", "E-mail", "Ligação", "Reunião presencial", "Videochamada"];
+const REGIMES   = ["MEI", "Simples Nacional", "Lucro Presumido", "Lucro Real", "Outro"];
+const PORTES    = ["Micro", "Pequena", "Média", "Grande"];
+const CANAIS    = ["WhatsApp", "E-mail", "Ligação", "Reunião presencial", "Videochamada"];
+export const SEGMENTOS = [
+  "Serviço",
+  "Comércio",
+  "Indústria",
+  "Comércio e Serviço",
+  "Comércio, Serviços e Indústria",
+];
+
+export const UFS = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA",
+  "MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN",
+  "RS","RO","RR","SC","SP","SE","TO",
+];
 
 export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
   const { toast } = useToast();
@@ -25,6 +38,7 @@ export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
   const [nomeFantasia, setNomeFantasia] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [segmento, setSegmento] = useState("");
+  const [uf, setUf] = useState("");
   const [regime, setRegime] = useState("Simples Nacional");
   const [porte, setPorte] = useState("Pequena");
   const [canal, setCanal] = useState("WhatsApp");
@@ -37,6 +51,7 @@ export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
     setNomeFantasia("");
     setCnpj("");
     setSegmento("");
+    setUf("");
     setRegime("Simples Nacional");
     setPorte("Pequena");
     setCanal("WhatsApp");
@@ -56,7 +71,8 @@ export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
       razao_social: razaoSocial.trim(),
       nome_fantasia: nomeFantasia.trim() || null,
       cnpj: cnpj.trim() || null,
-      segmento: segmento.trim() || null,
+      segmento: segmento || null,
+      uf: uf || null,
       regime_tributario: regime,
       porte,
       canal_preferido: canal,
@@ -98,7 +114,21 @@ export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="segmento">Segmento</Label>
-              <Input id="segmento" value={segmento} onChange={(e) => setSegmento(e.target.value)} maxLength={120} />
+              <Select value={segmento} onValueChange={setSegmento}>
+                <SelectTrigger id="segmento"><SelectValue placeholder="Selecione o segmento..." /></SelectTrigger>
+                <SelectContent>
+                  {SEGMENTOS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="uf">UF</Label>
+              <Select value={uf} onValueChange={setUf}>
+                <SelectTrigger id="uf"><SelectValue placeholder="Selecione o estado..." /></SelectTrigger>
+                <SelectContent>
+                  {UFS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Regime Tributário</Label>

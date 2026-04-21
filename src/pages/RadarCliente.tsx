@@ -38,6 +38,7 @@ interface EditForm {
   razao_social: string;
   nome_fantasia: string;
   segmento: string;
+  uf: string;
   regime_tributario: string;
   porte: string;
   canal_preferido: string;
@@ -66,6 +67,7 @@ export default function RadarCliente() {
     razao_social: "",
     nome_fantasia: "",
     segmento: "",
+    uf: "",
     regime_tributario: "",
     porte: "",
     canal_preferido: "",
@@ -105,6 +107,7 @@ export default function RadarCliente() {
       razao_social: (cliente as any).razao_social ?? "",
       nome_fantasia: (cliente as any).nome_fantasia ?? "",
       segmento: (cliente as any).segmento ?? "",
+      uf: (cliente as any).uf ?? "",
       regime_tributario: (cliente as any).regime_tributario ?? "",
       porte: (cliente as any).porte ?? "",
       canal_preferido: (cliente as any).canal_preferido ?? "",
@@ -123,6 +126,7 @@ export default function RadarCliente() {
       razao_social: editForm.razao_social,
       nome_fantasia: editForm.nome_fantasia || null,
       segmento: editForm.segmento || null,
+      uf: editForm.uf || null,
       regime_tributario: editForm.regime_tributario || null,
       porte: editForm.porte || null,
       canal_preferido: editForm.canal_preferido || null,
@@ -161,264 +165,324 @@ export default function RadarCliente() {
 
   const diasColor = (d: number) => d >= 60 ? "#ef4444" : d >= 30 ? "#f59e0b" : "#10b981";
 
-  const inputClass = "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
+  const inputClass = "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
   const labelClass = "block text-xs font-medium text-gray-600 mb-1";
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const emailInitials = userEmail ? userEmail.split("@")[0].slice(0, 2).toUpperCase() : "TF";
+
+  const navItems = [
+    { label: "Dashboard",     path: "/",             active: false },
+    { label: "Clientes",      path: "/clientes",     active: true  },
+    { label: "Orientações",   path: "/orientacoes",  active: false },
+    { label: "Follow-ups",    path: "/",             active: false },
+    { label: "Administração", path: "/admin",        active: false },
+  ];
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f0f4ff" }}>
+    <div style={{ minHeight: "100vh", background: "#f4f6f9", fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
 
-      {/* Sidebar */}
-      <aside style={{ width: "220px", background: "#0f172a", display: "flex", flexDirection: "column", flexShrink: 0, position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 20 }}>
-        <div style={{ padding: "20px", borderBottom: "1px solid rgba(255,255,255,.08)", marginBottom: "8px" }}>
-          <img src="/logo_freitas.png" alt="" style={{ height: "36px", objectFit: "contain", filter: "brightness(0) invert(1)", opacity: 0.9 }} />
-          <div style={{ fontSize: "11px", color: "rgba(255,255,255,.4)", marginTop: "6px" }}>CRM Consultivo</div>
-        </div>
-
-        <nav style={{ flex: 1, padding: "4px 0" }}>
-          <div style={{ fontSize: "10px", color: "rgba(255,255,255,.3)", padding: "10px 20px 4px", textTransform: "uppercase", letterSpacing: ".08em" }}>Principal</div>
-
-          {[
-            { label: "Dashboard", path: "/", active: false },
-            { label: "Clientes", path: "/", active: true },
-            { label: "Orientações", path: "/", active: false, badge: "12" },
-            { label: "Follow-ups", path: "/", active: false, badge: "5" },
-          ].map((item) => (
-            <div key={item.label} onClick={() => navigate(item.path)} style={{ padding: "8px 20px", fontSize: "13px", color: item.active ? "#fff" : "rgba(255,255,255,.55)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: item.active ? "2px solid #10b981" : "2px solid transparent", background: item.active ? "rgba(255,255,255,.06)" : "transparent", fontWeight: item.active ? 500 : 400 }}>
-              {item.label}
-              {item.badge && <span style={{ background: "#ef4444", color: "#fff", borderRadius: "20px", fontSize: "9px", fontWeight: 600, padding: "1px 6px" }}>{item.badge}</span>}
-            </div>
-          ))}
-
-          <div style={{ fontSize: "10px", color: "rgba(255,255,255,.3)", padding: "14px 20px 4px", textTransform: "uppercase", letterSpacing: ".08em" }}>Gestão</div>
-
-          {[
-            { label: "Relatórios", path: "/" },
-            { label: "Metas", path: "/" },
-            { label: "Administração", path: "/admin" },
-          ].map((item) => (
-            <div key={item.label} onClick={() => navigate(item.path)} style={{ padding: "8px 20px", fontSize: "13px", color: "rgba(255,255,255,.55)", cursor: "pointer", borderLeft: "2px solid transparent" }}>
-              {item.label}
-            </div>
-          ))}
-        </nav>
-
-        <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,.08)", display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#059669)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 600, color: "#fff", flexShrink: 0 }}>
-            {initials(userEmail || "TF")}
+      {/* ── Top nav ── */}
+      <header style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 30 }}>
+        <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "0 28px", display: "flex", alignItems: "center", height: "58px", gap: "28px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+            <img src="/logo_freitas.png" alt="" style={{ height: "28px", objectFit: "contain" }} />
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151", borderLeft: "1px solid #e5e7eb", paddingLeft: "10px", letterSpacing: ".02em" }}>CRM Consultivo</span>
           </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: "12px", fontWeight: 500, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail || "Usuário"}</div>
-            <div style={{ fontSize: "10px", color: "rgba(255,255,255,.4)" }}>Administrador</div>
+          <nav style={{ display: "flex", gap: "2px", flex: 1 }}>
+            {navItems.map(item => (
+              <button key={item.label} onClick={() => navigate(item.path)}
+                style={{ padding: "5px 13px", fontSize: "13px", fontWeight: item.active ? 600 : 400, color: item.active ? "#1d4ed8" : "#6b7280", background: item.active ? "#eff6ff" : "transparent", border: "none", borderRadius: "6px", cursor: "pointer" }}
+                onMouseEnter={e => { if (!item.active) e.currentTarget.style.background = "#f9fafb"; }}
+                onMouseLeave={e => { if (!item.active) e.currentTarget.style.background = "transparent"; }}>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <button onClick={() => setMenuOpen(o => !o)}
+              style={{ display: "flex", alignItems: "center", gap: "8px", background: "transparent", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "5px 10px", cursor: "pointer" }}>
+              <div style={{ width: "27px", height: "27px", borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#1e40af)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff" }}>
+                {emailInitials}
+              </div>
+              <span style={{ fontSize: "12px", color: "#374151", fontWeight: 500, maxWidth: "130px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail || "Usuário"}</span>
+              <svg width="11" height="11" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            {menuOpen && (
+              <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,.08)", minWidth: "190px", overflow: "hidden", zIndex: 50 }}>
+                <div style={{ padding: "12px 14px", borderBottom: "1px solid #f3f4f6" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 600, color: "#111827" }}>{userEmail}</div>
+                  <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "1px" }}>Administrador</div>
+                </div>
+                <button onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+                  style={{ width: "100%", padding: "10px 14px", fontSize: "13px", color: "#dc2626", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: "8px" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  Sair da conta
+                </button>
+              </div>
+            )}
           </div>
-          <button
-            onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
-            title="Sair"
-            style={{ background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,.4)", padding: "4px", display: "flex", alignItems: "center", flexShrink: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,.4)")}
-          >
-            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </button>
         </div>
-      </aside>
+      </header>
 
-      {/* Main */}
-      <div style={{ marginLeft: "220px", flex: 1, padding: "28px" }}>
+      {/* ── Main ── */}
+      <main style={{ maxWidth: "1240px", margin: "0 auto", padding: "28px 28px 80px" }}>
 
-        {/* Back link */}
-        <button
-          onClick={() => navigate("/")}
-          style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#64748b", background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: "20px" }}
-          onMouseEnter={e => (e.currentTarget.style.color = "#0f172a")}
-          onMouseLeave={e => (e.currentTarget.style.color = "#64748b")}
-        >
+        {/* Back */}
+        <button onClick={() => navigate("/clientes")}
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#6b7280", background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: "20px" }}
+          onMouseEnter={e => e.currentTarget.style.color = "#111827"}
+          onMouseLeave={e => e.currentTarget.style.color = "#6b7280"}>
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-          Voltar ao dashboard
+          Voltar para Clientes
         </button>
 
         {loading && !cliente ? (
-          <div style={{ height: "120px", borderRadius: "12px", background: "#e2e8f0", animation: "pulse 1.5s ease-in-out infinite" }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ height: "110px", borderRadius: "10px", background: "#e5e7eb" }} />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px" }}>
+              {[1,2,3,4].map(i => <div key={i} style={{ height: "80px", borderRadius: "10px", background: "#e5e7eb" }} />)}
+            </div>
+          </div>
         ) : !cliente ? (
-          <div style={{ background: "#fff", border: "1px solid #e8eaed", borderRadius: "12px", padding: "48px", textAlign: "center", fontSize: "14px", color: "#94a3b8" }}>
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "48px", textAlign: "center", fontSize: "14px", color: "#9ca3af" }}>
             Cliente não encontrado.
           </div>
         ) : (
           <>
-            {/* Client header */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px", gap: "16px", flexWrap: "wrap" }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                  <h1 style={{ fontSize: "20px", fontWeight: 600, color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {cliente.razao_social ?? "Cliente"}
-                  </h1>
-                  <button
-                    onClick={openEdit}
-                    style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#1e3a5f", color: "#fff", border: "none", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 500, cursor: "pointer" }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "#1e40af")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "#1e3a5f")}
-                  >
-                    <Pencil size={11} /> Editar cadastro
-                  </button>
-                </div>
-                {cliente.nome_fantasia && (
-                  <p style={{ fontSize: "13px", color: "#64748b", marginTop: "4px" }}>{cliente.nome_fantasia}</p>
-                )}
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", marginTop: "10px" }}>
-                  <StatusBadge status={cliente.semaforo} />
-                  {cliente.segmento && (
-                    <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: "#f1f5f9", padding: "3px 10px", fontSize: "11px", fontWeight: 500, color: "#475569" }}>
-                      {cliente.segmento}
-                    </span>
-                  )}
-                  {(cliente as any).regime_tributario && (
-                    <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: "#f1f5f9", padding: "3px 10px", fontSize: "11px", fontWeight: 500, color: "#475569" }}>
-                      {(cliente as any).regime_tributario}
-                    </span>
-                  )}
-                </div>
-                {(cliente as any).observacoes && (
-                  <div style={{ background: "#fffbeb", border: "1.5px solid #fcd34d", borderRadius: "8px", padding: "12px 16px", marginTop: "12px" }}>
-                    <div style={{ fontSize: "10px", fontWeight: 600, color: "#92400e", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: "5px" }}>Particularidades gerais da empresa</div>
-                    <div style={{ fontSize: "13px", color: "#78350f", lineHeight: 1.6 }}>{(cliente as any).observacoes}</div>
+            {/* ── Client header card ── */}
+            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "20px 24px", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "4px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: 700, color: "#1d4ed8", flexShrink: 0 }}>
+                      {(cliente.razao_social ?? "?").trim().split(" ").filter(Boolean).slice(0,2).map((w: string) => w[0]).join("").toUpperCase()}
+                    </div>
+                    <div>
+                      <h1 style={{ fontSize: "18px", fontWeight: 700, color: "#111827", margin: 0 }}>
+                        {cliente.razao_social ?? "Cliente"}
+                      </h1>
+                      {cliente.nome_fantasia && cliente.nome_fantasia !== cliente.razao_social && (
+                        <p style={{ fontSize: "12px", color: "#9ca3af", margin: 0 }}>{cliente.nome_fantasia}</p>
+                      )}
+                    </div>
+                    <button onClick={openEdit}
+                      style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#dbeafe"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#eff6ff"}>
+                      <Pencil size={11} /> Editar cadastro
+                    </button>
                   </div>
-                )}
-              </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px", marginTop: "10px" }}>
+                    <StatusBadge status={cliente.semaforo} />
+                    {cliente.segmento && (
+                      <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: "#f1f5f9", border: "1px solid #e5e7eb", padding: "3px 10px", fontSize: "11px", fontWeight: 500, color: "#475569" }}>
+                        {cliente.segmento}
+                      </span>
+                    )}
+                    {(cliente as any).uf && (
+                      <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: "#f1f5f9", border: "1px solid #e5e7eb", padding: "3px 10px", fontSize: "11px", fontWeight: 500, color: "#475569" }}>
+                        {(cliente as any).uf}
+                      </span>
+                    )}
+                    {(cliente as any).regime_tributario && (
+                      <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "3px 10px", fontSize: "11px", fontWeight: 500, color: "#166534" }}>
+                        {(cliente as any).regime_tributario}
+                      </span>
+                    )}
+                    {(cliente as any).porte && (
+                      <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: "#f1f5f9", border: "1px solid #e5e7eb", padding: "3px 10px", fontSize: "11px", fontWeight: 500, color: "#475569" }}>
+                        {(cliente as any).porte}
+                      </span>
+                    )}
+                  </div>
+                  {(cliente as any).observacoes && (
+                    <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", padding: "10px 14px", marginTop: "12px" }}>
+                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: "4px" }}>Particularidades</div>
+                      <div style={{ fontSize: "13px", color: "#78350f", lineHeight: 1.6 }}>{(cliente as any).observacoes}</div>
+                    </div>
+                  )}
+                </div>
 
-              {/* Dias sem orientação destaque */}
-              <div style={{ background: "#fff", border: "1px solid #e8eaed", borderRadius: "12px", padding: "16px 24px", textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontSize: "10px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: ".06em" }}>Dias sem orientação</div>
-                <div style={{ fontSize: "36px", fontWeight: 700, lineHeight: 1.1, color: diasColor(dias), tabularNums: true } as any}>{dias}</div>
+                {/* Dias destaque */}
+                <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "14px 20px", textAlign: "center", flexShrink: 0 }}>
+                  <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: "4px" }}>Dias sem orientação</div>
+                  <div style={{ fontSize: "38px", fontWeight: 800, lineHeight: 1, color: diasColor(dias) }}>{dias}</div>
+                </div>
               </div>
             </div>
 
-            {/* Metric cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px", marginBottom: "28px" }}>
+            {/* ── Metric cards ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px", marginBottom: "16px" }}>
               <MetricCard label="Última orientação" value={ultimaOrientacao} loading={loading} />
               <MetricCard label="Dias sem orientação" value={dias} tone={dias >= 60 ? "critical" : dias >= 30 ? "warning" : "success"} loading={loading} />
               <MetricCard label="Follow-ups pendentes" value={followups} loading={loading} />
               <MetricCard label="Total de orientações" value={totalOrientacoes} loading={loading} />
             </div>
 
-            {/* Timeline */}
-            <div style={{ marginBottom: "24px" }}>
-              <h2 style={{ fontSize: "15px", fontWeight: 600, color: "#0f172a", margin: "0 0 12px" }}>Timeline de interações</h2>
-              <div style={{ background: "#fff", border: "1px solid #e8eaed", borderRadius: "12px", overflow: "hidden" }}>
-                {interacoes.length === 0 ? (
-                  <div style={{ padding: "48px", textAlign: "center", fontSize: "14px", color: "#94a3b8" }}>Nenhuma interação registrada.</div>
-                ) : (
-                  <>
-                    {interacoesPaginadas.map((it, idx) => {
-                      const cfg = tipoConfig[it.tipo as string] ?? tipoConfig.suporte;
-                      return (
-                        <div key={String(it.id)} style={{ padding: "16px 20px", borderBottom: idx < interacoesPaginadas.length - 1 ? "1px solid #f1f5f9" : "none" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                              <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: cfg.bg, color: cfg.color, padding: "3px 10px", fontSize: "11px", fontWeight: 600 }}>
-                                {cfg.label}
-                              </span>
-                              <span style={{ fontSize: "12px", color: "#94a3b8" }}>
-                                {formatDate(it.data_interacao ?? (it as any).data ?? it.criado_em ?? (it as any).created_at)}
-                              </span>
+            {/* ── Two-column layout ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "16px", alignItems: "start" }}>
+
+              {/* Timeline */}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <h2 style={{ fontSize: "14px", fontWeight: 700, color: "#111827", margin: 0 }}>Timeline de interações</h2>
+                  <span style={{ fontSize: "11px", color: "#9ca3af", background: "#f3f4f6", padding: "2px 8px", borderRadius: "10px" }}>{interacoes.length} registros</span>
+                </div>
+                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+                  {interacoes.length === 0 ? (
+                    <div style={{ padding: "48px", textAlign: "center" }}>
+                      <div style={{ width: "40px", height: "40px", background: "#f3f4f6", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", color: "#d1d5db" }}>
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#6b7280", fontWeight: 500 }}>Nenhuma interação registrada.</div>
+                      <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>Clique em "Registrar orientação" para começar.</div>
+                    </div>
+                  ) : (
+                    <>
+                      {interacoesPaginadas.map((it, idx) => {
+                        const cfg = tipoConfig[it.tipo as string] ?? tipoConfig.suporte;
+                        return (
+                          <div key={String(it.id)} style={{ padding: "14px 18px", borderBottom: idx < interacoesPaginadas.length - 1 ? "1px solid #f9fafb" : "none" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "7px", flexWrap: "wrap" }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", borderRadius: "20px", background: cfg.bg, color: cfg.color, padding: "3px 9px", fontSize: "11px", fontWeight: 600 }}>
+                                  <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: cfg.color }} />
+                                  {cfg.label}
+                                </span>
+                                {(it as any).canal && (
+                                  <span style={{ fontSize: "10px", color: "#9ca3af", background: "#f3f4f6", padding: "2px 6px", borderRadius: "8px" }}>{(it as any).canal}</span>
+                                )}
+                                <span style={{ fontSize: "11px", color: "#9ca3af" }}>
+                                  {formatDate(it.data_interacao ?? (it as any).data ?? it.criado_em ?? (it as any).created_at)}
+                                </span>
+                              </div>
+                              <button onClick={() => handleDeleteInteracao(String(it.id))} disabled={deletingId === String(it.id)}
+                                style={{ background: "none", border: "none", cursor: "pointer", color: "#d1d5db", padding: "2px", display: "flex", alignItems: "center" }}
+                                onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")}
+                                onMouseLeave={e => (e.currentTarget.style.color = "#d1d5db")}
+                                title="Excluir">
+                                {deletingId === String(it.id)
+                                  ? <span style={{ fontSize: "11px", color: "#9ca3af" }}>Excluindo...</span>
+                                  : <Trash2 size={14} />}
+                              </button>
                             </div>
-                            <button
-                              onClick={() => handleDeleteInteracao(String(it.id))}
-                              disabled={deletingId === String(it.id)}
-                              style={{ background: "none", border: "none", cursor: "pointer", color: "#fca5a5", padding: "2px", display: "flex", alignItems: "center" }}
-                              onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")}
-                              onMouseLeave={e => (e.currentTarget.style.color = "#fca5a5")}
-                              title="Excluir interação"
-                            >
-                              {deletingId === String(it.id)
-                                ? <span style={{ fontSize: "11px", color: "#94a3b8" }}>Excluindo...</span>
-                                : <Trash2 size={15} />
-                              }
-                            </button>
+                            <p style={{ margin: "7px 0 0", fontSize: "13px", fontWeight: 600, color: "#111827" }}>{it.assunto ?? "Sem assunto"}</p>
+                            {it.resumo && <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#6b7280", lineHeight: 1.5 }}>{it.resumo}</p>}
+                            {(it as any).proximo_passo && (
+                              <div style={{ marginTop: "6px", display: "flex", alignItems: "flex-start", gap: "5px", fontSize: "11px", color: "#d97706", background: "#fffbeb", padding: "4px 8px", borderRadius: "6px", border: "1px solid #fde68a" }}>
+                                <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: "1px" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                {(it as any).proximo_passo}
+                              </div>
+                            )}
                           </div>
-                          <p style={{ margin: "8px 0 0", fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>{it.assunto ?? "Sem assunto"}</p>
-                          {it.resumo && <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>{it.resumo}</p>}
+                        );
+                      })}
+                      {totalPaginas > 1 && (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #f3f4f6", padding: "10px 18px" }}>
+                          <span style={{ fontSize: "12px", color: "#9ca3af" }}>Página {paginaAtual} de {totalPaginas}</span>
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            <button onClick={() => setPaginaAtual(p => Math.max(1, p - 1))} disabled={paginaAtual === 1} style={{ padding: "4px 10px", border: "1px solid #e5e7eb", borderRadius: "6px", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#6b7280", opacity: paginaAtual === 1 ? .4 : 1 }}>← Anterior</button>
+                            <button onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))} disabled={paginaAtual === totalPaginas} style={{ padding: "4px 10px", border: "1px solid #e5e7eb", borderRadius: "6px", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#6b7280", opacity: paginaAtual === totalPaginas ? .4 : 1 }}>Próxima →</button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Ações consultivas */}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <h2 style={{ fontSize: "14px", fontWeight: 700, color: "#111827", margin: 0 }}>Ações consultivas abertas</h2>
+                  {acoes.length > 0 && (
+                    <span style={{ fontSize: "11px", fontWeight: 700, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", padding: "2px 8px", borderRadius: "10px" }}>{acoes.length}</span>
+                  )}
+                </div>
+                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+                  {acoes.length === 0 ? (
+                    <div style={{ padding: "32px", textAlign: "center" }}>
+                      <div style={{ width: "36px", height: "36px", background: "#f0fdf4", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", color: "#16a34a" }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#6b7280", fontWeight: 500 }}>Nenhuma ação aberta.</div>
+                    </div>
+                  ) : (
+                    acoes.map((ac, idx) => {
+                      const ucfg = urgenciaConfig[(ac.urgencia ?? "media") as string] ?? urgenciaConfig.media;
+                      return (
+                        <div key={String(ac.id)} style={{ padding: "14px 16px", borderBottom: idx < acoes.length - 1 ? "1px solid #f9fafb" : "none" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px", marginBottom: "6px" }}>
+                            <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#111827", flex: 1, minWidth: 0 }}>{ac.tema ?? "Tema"}</p>
+                            <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: ucfg.bg, color: ucfg.color, padding: "2px 8px", fontSize: "10px", fontWeight: 600, flexShrink: 0 }}>{ucfg.label}</span>
+                          </div>
+                          {ac.problema_identificado && (
+                            <div style={{ marginBottom: "4px" }}>
+                              <p style={{ margin: "0 0 2px", fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em" }}>Problema</p>
+                              <p style={{ margin: 0, fontSize: "12px", color: "#475569" }}>{ac.problema_identificado}</p>
+                            </div>
+                          )}
+                          {ac.acao_recomendada && (
+                            <div style={{ marginBottom: "4px" }}>
+                              <p style={{ margin: "0 0 2px", fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em" }}>Ação</p>
+                              <p style={{ margin: 0, fontSize: "12px", color: "#475569" }}>{ac.acao_recomendada}</p>
+                            </div>
+                          )}
+                          {ac.data_retorno_prevista && (
+                            <p style={{ margin: "4px 0 6px", fontSize: "11px", color: "#9ca3af" }}>Retorno: {formatDate(ac.data_retorno_prevista)}</p>
+                          )}
+                          <button
+                            onClick={async () => { await supabase.from("acoes_consultivas").update({ status: "concluida" }).eq("id", ac.id); load(); }}
+                            style={{ marginTop: "8px", border: "1px solid #bbf7d0", background: "#f0fdf4", borderRadius: "6px", padding: "4px 12px", fontSize: "11px", fontWeight: 600, color: "#16a34a", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#dcfce7"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#f0fdf4"}>
+                            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                            Marcar como concluída
+                          </button>
                         </div>
                       );
-                    })}
+                    })
+                  )}
+                </div>
 
-                    {totalPaginas > 1 && (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #f1f5f9", padding: "12px 20px" }}>
-                        <span style={{ fontSize: "12px", color: "#94a3b8" }}>
-                          Página {paginaAtual} de {totalPaginas} — {interacoes.length} interações
-                        </span>
-                        <div style={{ display: "flex", gap: "4px" }}>
-                          <button onClick={() => setPaginaAtual(p => Math.max(1, p - 1))} disabled={paginaAtual === 1} style={{ padding: "4px 10px", border: "1px solid #e2e8f0", borderRadius: "6px", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#64748b", opacity: paginaAtual === 1 ? .4 : 1 }}>← Anterior</button>
-                          <button onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))} disabled={paginaAtual === totalPaginas} style={{ padding: "4px 10px", border: "1px solid #e2e8f0", borderRadius: "6px", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#64748b", opacity: paginaAtual === totalPaginas ? .4 : 1 }}>Próxima →</button>
-                        </div>
+                {/* Dores + Objetivos */}
+                {((cliente as any).dores_mapeadas || (cliente as any).objetivos_empresario) && (
+                  <div style={{ marginTop: "16px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+                    {(cliente as any).dores_mapeadas && (
+                      <div style={{ padding: "14px 16px", borderBottom: (cliente as any).objetivos_empresario ? "1px solid #f3f4f6" : "none" }}>
+                        <p style={{ margin: "0 0 5px", fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em" }}>Dores mapeadas</p>
+                        <p style={{ margin: 0, fontSize: "12px", color: "#374151", lineHeight: 1.6 }}>{(cliente as any).dores_mapeadas}</p>
                       </div>
                     )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Ações consultivas */}
-            <div>
-              <h2 style={{ fontSize: "15px", fontWeight: 600, color: "#0f172a", margin: "0 0 12px" }}>Ações consultivas abertas</h2>
-              <div style={{ background: "#fff", border: "1px solid #e8eaed", borderRadius: "12px", overflow: "hidden" }}>
-                {acoes.length === 0 ? (
-                  <div style={{ padding: "48px", textAlign: "center", fontSize: "14px", color: "#94a3b8" }}>Nenhuma ação aberta.</div>
-                ) : (
-                  acoes.map((ac, idx) => {
-                    const ucfg = urgenciaConfig[(ac.urgencia ?? "media") as string] ?? urgenciaConfig.media;
-                    return (
-                      <div key={String(ac.id)} style={{ padding: "16px 20px", borderBottom: idx < acoes.length - 1 ? "1px solid #f1f5f9" : "none" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", marginBottom: "8px" }}>
-                          <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>{ac.tema ?? "Tema"}</p>
-                          <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: ucfg.bg, color: ucfg.color, padding: "3px 10px", fontSize: "11px", fontWeight: 600 }}>{ucfg.label}</span>
-                        </div>
-                        {ac.problema_identificado && (
-                          <>
-                            <p style={{ margin: "6px 0 2px", fontSize: "10px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: ".06em" }}>Problema identificado</p>
-                            <p style={{ margin: 0, fontSize: "13px", color: "#475569" }}>{ac.problema_identificado}</p>
-                          </>
-                        )}
-                        {ac.acao_recomendada && (
-                          <>
-                            <p style={{ margin: "6px 0 2px", fontSize: "10px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: ".06em" }}>Ação recomendada</p>
-                            <p style={{ margin: 0, fontSize: "13px", color: "#475569" }}>{ac.acao_recomendada}</p>
-                          </>
-                        )}
-                        {ac.data_retorno_prevista && (
-                          <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#94a3b8" }}>Retorno previsto: {formatDate(ac.data_retorno_prevista)}</p>
-                        )}
-                        <button
-                          onClick={async () => {
-                            await supabase.from("acoes_consultivas").update({ status: "concluida" }).eq("id", ac.id);
-                            load();
-                          }}
-                          style={{ marginTop: "10px", border: "1px solid #10b981", background: "transparent", borderRadius: "6px", padding: "4px 12px", fontSize: "12px", fontWeight: 500, color: "#10b981", cursor: "pointer" }}
-                          onMouseEnter={e => { e.currentTarget.style.background = "#f0fdf4"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-                        >
-                          Marcar como concluída
-                        </button>
+                    {(cliente as any).objetivos_empresario && (
+                      <div style={{ padding: "14px 16px" }}>
+                        <p style={{ margin: "0 0 5px", fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em" }}>Objetivos do empresário</p>
+                        <p style={{ margin: 0, fontSize: "12px", color: "#374151", lineHeight: 1.6 }}>{(cliente as any).objetivos_empresario}</p>
                       </div>
-                    );
-                  })
+                    )}
+                  </div>
                 )}
               </div>
             </div>
           </>
         )}
-      </div>
+      </main>
 
       {/* FAB */}
-      <button
-        onClick={() => setModalOpen(true)}
-        style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 20, background: "#10b981", color: "#fff", border: "none", borderRadius: "28px", padding: "14px 22px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 14px rgba(16,185,129,.4)" }}
-        onMouseEnter={e => (e.currentTarget.style.background = "#059669")}
-        onMouseLeave={e => (e.currentTarget.style.background = "#10b981")}
-      >
-        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      <button onClick={() => setModalOpen(true)}
+        style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 20, background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "28px", padding: "13px 20px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 16px rgba(29,78,216,.35)" }}
+        onMouseEnter={e => e.currentTarget.style.background = "#1e40af"}
+        onMouseLeave={e => e.currentTarget.style.background = "#1d4ed8"}>
+        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         Registrar orientação
       </button>
 
@@ -441,9 +505,27 @@ export default function RadarCliente() {
                 <label className={labelClass}>Nome Fantasia</label>
                 <input className={inputClass} value={editForm.nome_fantasia} onChange={e => setEditForm(f => ({ ...f, nome_fantasia: e.target.value }))} />
               </div>
-              <div>
-                <label className={labelClass}>Segmento</label>
-                <input className={inputClass} value={editForm.segmento} onChange={e => setEditForm(f => ({ ...f, segmento: e.target.value }))} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <div>
+                  <label className={labelClass}>Segmento</label>
+                  <select className={inputClass} value={editForm.segmento} onChange={e => setEditForm(f => ({ ...f, segmento: e.target.value }))}>
+                    <option value="">Selecione o segmento...</option>
+                    <option>Serviço</option>
+                    <option>Comércio</option>
+                    <option>Indústria</option>
+                    <option>Comércio e Serviço</option>
+                    <option>Comércio, Serviços e Indústria</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>UF</label>
+                  <select className={inputClass} value={editForm.uf} onChange={e => setEditForm(f => ({ ...f, uf: e.target.value }))}>
+                    <option value="">Selecione o estado...</option>
+                    {["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].map(u => (
+                      <option key={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                 <div>

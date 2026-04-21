@@ -49,19 +49,18 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
   useEffect(() => {
     if (!open) return;
     supabase
-      .from("radar_consultivo")
-      .select("id,cliente_id,razao_social,nome_fantasia")
-      .order("razao_social")
-      .then(({ data }) => {
-        const opts = (data ?? []).map((r: any) => ({
-          id: r.cliente_id ?? r.id,
-          label: r.razao_social ?? r.nome_fantasia ?? String(r.cliente_id ?? r.id),
+      .from("clientes")
+      .select("id, razao_social, nome_fantasia")
+      .order("razao_social", { ascending: true })
+      .then(({ data, error }) => {
+        if (error || !data) return;
+        const opts: ClienteOpt[] = data.map((r: any) => ({
+          id: r.id,
+          label: r.razao_social ?? r.nome_fantasia ?? String(r.id),
         }));
         setClientes(opts);
         if (clienteIdPreSelected != null) {
           setClienteId(String(clienteIdPreSelected));
-        } else if (opts.length > 0 && !clienteId) {
-          setClienteId(String(opts[0].id));
         }
       });
   }, [open]);

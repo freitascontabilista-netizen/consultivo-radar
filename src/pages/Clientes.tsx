@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase, type RadarConsultivoRow, type SemaforoStatus } from "@/lib/supabase";
 import { StatusBadge } from "@/components/StatusBadge";
-import { NovoClienteModal } from "@/components/NovoClienteModal";
+import { NovoClienteModal, SEGMENTOS as SEGMENTOS_FIXOS } from "@/components/NovoClienteModal";
 
 type StatusFilter = "todos" | SemaforoStatus;
 type PorPagina = 10 | 20 | 50 | 100;
@@ -55,8 +55,9 @@ export default function Clientes() {
   }, [reloadKey]);
 
   const segmentos = useMemo(() => {
-    const s = new Set(rows.map(r => r.segmento).filter(Boolean) as string[]);
-    return Array.from(s).sort();
+    const fromData = rows.map(r => r.segmento).filter(Boolean) as string[];
+    const merged = new Set([...SEGMENTOS_FIXOS, ...fromData]);
+    return Array.from(merged).sort();
   }, [rows]);
 
   const regimes = useMemo(() => {
@@ -65,7 +66,6 @@ export default function Clientes() {
   }, [rows]);
 
   const filtered = useMemo(() => {
-    setPagina(1);
     const q = search.trim().toLowerCase();
     const minDias = diasMin ? parseInt(diasMin, 10) : 0;
     return rows.filter(r => {
@@ -80,6 +80,8 @@ export default function Clientes() {
       return true;
     });
   }, [rows, search, statusFilter, segmentoFilter, regimeFilter, diasMin]);
+
+  useEffect(() => { setPagina(1); }, [search, statusFilter, segmentoFilter, regimeFilter, diasMin]);
 
   const totalPaginas = Math.ceil(filtered.length / porPagina);
   const paginados = filtered.slice((pagina - 1) * porPagina, pagina * porPagina);
@@ -283,8 +285,8 @@ export default function Clientes() {
           </div>
 
           {/* Column headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr 44px", padding: "9px 20px", background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-            {["Cliente", "Segmento", "Regime", "Dias s/ orientação", "Status", ""].map(h => (
+          <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr", padding: "9px 20px", background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
+            {["Cliente", "Segmento", "Regime", "Dias s/ orientação", "Status"].map(h => (
               <div key={h} style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".07em" }}>{h}</div>
             ))}
           </div>
@@ -297,7 +299,7 @@ export default function Clientes() {
             </div>
           ) : loading ? (
             Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr 44px", padding: "14px 20px", borderBottom: "1px solid #f9fafb", alignItems: "center", gap: "8px" }}>
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr", padding: "14px 20px", borderBottom: "1px solid #f9fafb", alignItems: "center", gap: "8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: "#f3f4f6", flexShrink: 0 }} />
                   <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
@@ -328,8 +330,8 @@ export default function Clientes() {
               const go = () => id != null && navigate(`/radar/${id}`);
               return (
                 <div key={String(id ?? idx)} onClick={go}
-                  style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr 44px", padding: "13px 20px", borderBottom: idx < paginados.length - 1 ? "1px solid #f9fafb" : "none", alignItems: "center", cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                  style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr", padding: "13px 20px", borderBottom: idx < paginados.length - 1 ? "1px solid #f9fafb" : "none", alignItems: "center", cursor: "pointer", transition: "background .12s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
 
                   {/* Name */}
@@ -373,16 +375,6 @@ export default function Clientes() {
 
                   {/* Status */}
                   <div><StatusBadge status={r.semaforo} /></div>
-
-                  {/* Arrow */}
-                  <div style={{ display: "flex", justifyContent: "center" }}>
-                    <div onClick={e => { e.stopPropagation(); go(); }}
-                      style={{ width: "28px", height: "28px", border: "1px solid #e5e7eb", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#9ca3af" }}
-                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = "#eff6ff"; el.style.borderColor = "#1d4ed8"; el.style.color = "#1d4ed8"; }}
-                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = "transparent"; el.style.borderColor = "#e5e7eb"; el.style.color = "#9ca3af"; }}>
-                      <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </div>
-                  </div>
                 </div>
               );
             })
