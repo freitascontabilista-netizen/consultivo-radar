@@ -110,10 +110,14 @@ export default function Clientes() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const id = deleteTarget.id ?? deleteTarget.cliente_id;
+    // cliente_id é o FK real para a tabela clientes; id pode ser sintético na view
+    const id = deleteTarget.cliente_id ?? deleteTarget.id;
     if (id == null) return;
     setDeleting(true);
-    const { error } = await supabase.from("clientes").delete().eq("id", id);
+    const { error, count } = await supabase
+      .from("clientes")
+      .delete({ count: "exact" })
+      .eq("id", id);
     setDeleting(false);
     if (error) {
       const isVinculo = /foreign key|violates|referenced|fkey/i.test(error.message);
@@ -125,7 +129,14 @@ export default function Clientes() {
       });
       return;
     }
-    setRows(prev => prev.filter(r => (r.id ?? r.cliente_id) !== id));
+    if (count === 0) {
+      toast({
+        title: "Não foi possível excluir o cliente. Tente novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setRows(prev => prev.filter(r => (r.cliente_id ?? r.id) !== id));
     setDeleteTarget(null);
     toast({ title: "Cliente excluído com sucesso." });
   };
