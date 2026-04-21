@@ -25,6 +25,7 @@ export default function Clientes() {
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<RadarConsultivoRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const { toast } = useToast();
   const [userEmail, setUserEmail] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -113,31 +114,45 @@ export default function Clientes() {
     // cliente_id é o FK real para a tabela clientes; id pode ser sintético na view
     const id = deleteTarget.cliente_id ?? deleteTarget.id;
     if (id == null) return;
+
     setDeleting(true);
-    const { error, count } = await supabase
+    setDeleteError(null);
+
+    // 1. Excluir registros vinculados antes do cliente
+    const [{ error: errInteracoes }, { error: errAcoes }] = await Promise.all([
+      supabase.from("interacoes").delete().eq("cliente_id", id),
+      supabase.from("acoes_consultivas").delete().eq("cliente_id", id),
+    ]);
+
+    if (errInteracoes || errAcoes) {
+      const msg = errInteracoes?.message ?? errAcoes?.message ?? "Erro desconhecido";
+      setDeleting(false);
+      setDeleteError(`Falha ao excluir registros vinculados: ${msg}`);
+      return;
+    }
+
+    // 2. Excluir o cliente
+    const { error: errCliente, count } = await supabase
       .from("clientes")
       .delete({ count: "exact" })
       .eq("id", id);
+
     setDeleting(false);
-    if (error) {
-      const isVinculo = /foreign key|violates|referenced|fkey/i.test(error.message);
-      toast({
-        title: isVinculo
-          ? "Este cliente não pode ser excluído porque possui registros vinculados."
-          : "Não foi possível excluir o cliente. Tente novamente.",
-        variant: "destructive",
-      });
+
+    if (errCliente) {
+      setDeleteError(`Erro ao excluir cliente: ${errCliente.message}`);
       return;
     }
+
     if (count === 0) {
-      toast({
-        title: "Não foi possível excluir o cliente. Tente novamente.",
-        variant: "destructive",
-      });
+      setDeleteError(`Nenhuma linha afetada. Verifique se o ID ${id} existe na tabela clientes.`);
       return;
     }
+
+    // 3. Sucesso — atualiza a lista sem recarregar
     setRows(prev => prev.filter(r => (r.cliente_id ?? r.id) !== id));
     setDeleteTarget(null);
+    setDeleteError(null);
     toast({ title: "Cliente excluído com sucesso." });
   };
 
@@ -466,7 +481,7 @@ export default function Clientes() {
       {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 29 }} />}
       <NovoClienteModal open={novoOpen} onOpenChange={setNovoOpen} onSaved={() => setReloadKey(k => k + 1)} />
 
-      <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open && !deleting) setDeleteTarget(null); }}>
+      <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open && !deleting) { setDeleteTarget(null); setDeleteError(null); } }}>
         <DialogContent style={{ maxWidth: "420px" }}>
           <DialogHeader>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "50%", background: "#fef2f2", marginBottom: "12px" }}>
@@ -495,6 +510,13 @@ export default function Clientes() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {deleteError && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "10px 14px", marginTop: "4px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "#dc2626", marginBottom: "2px" }}>Erro ao excluir</div>
+              <div style={{ fontSize: "11px", color: "#b91c1c", fontFamily: "monospace", wordBreak: "break-all" }}>{deleteError}</div>
             </div>
           )}
 
