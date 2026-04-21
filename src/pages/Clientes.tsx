@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase, type RadarConsultivoRow, type SemaforoStatus } from "@/lib/supabase";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NovoClienteModal, SEGMENTOS as SEGMENTOS_FIXOS } from "@/components/NovoClienteModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 type StatusFilter = "todos" | SemaforoStatus;
 type PorPagina = 10 | 20 | 50 | 100;
@@ -21,6 +23,9 @@ export default function Clientes() {
   const [error, setError] = useState<string | null>(null);
   const [novoOpen, setNovoOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [deleteTarget, setDeleteTarget] = useState<RadarConsultivoRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
   const [userEmail, setUserEmail] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -102,6 +107,28 @@ export default function Clientes() {
 
   const diasColor = (d: number) => d >= 60 ? "#dc2626" : d >= 30 ? "#d97706" : "#16a34a";
   const diasBg   = (d: number) => d >= 60 ? "#fef2f2" : d >= 30 ? "#fffbeb" : "#f0fdf4";
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id ?? deleteTarget.cliente_id;
+    if (id == null) return;
+    setDeleting(true);
+    const { error } = await supabase.from("clientes").delete().eq("id", id);
+    setDeleting(false);
+    if (error) {
+      const isVinculo = /foreign key|violates|referenced|fkey/i.test(error.message);
+      toast({
+        title: isVinculo
+          ? "Este cliente não pode ser excluído porque possui registros vinculados."
+          : "Não foi possível excluir o cliente. Tente novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setRows(prev => prev.filter(r => (r.id ?? r.cliente_id) !== id));
+    setDeleteTarget(null);
+    toast({ title: "Cliente excluído com sucesso." });
+  };
 
   const navItems = [
     { label: "Dashboard", path: "/", active: false },
@@ -285,9 +312,9 @@ export default function Clientes() {
           </div>
 
           {/* Column headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr", padding: "9px 20px", background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-            {["Cliente", "Segmento", "Regime", "Dias s/ orientação", "Status"].map(h => (
-              <div key={h} style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".07em" }}>{h}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr 52px", padding: "9px 20px", background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
+            {["Cliente", "Segmento", "Regime", "Dias s/ orientação", "Status", ""].map((h, i) => (
+              <div key={i} style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".07em" }}>{h}</div>
             ))}
           </div>
 
@@ -299,7 +326,7 @@ export default function Clientes() {
             </div>
           ) : loading ? (
             Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr", padding: "14px 20px", borderBottom: "1px solid #f9fafb", alignItems: "center", gap: "8px" }}>
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr 52px", padding: "14px 20px", borderBottom: "1px solid #f9fafb", alignItems: "center", gap: "8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: "#f3f4f6", flexShrink: 0 }} />
                   <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
@@ -310,6 +337,7 @@ export default function Clientes() {
                 {[70, 90, 50, 80].map((w, j) => (
                   <div key={j} style={{ height: "22px", width: `${w}px`, background: "#f3f4f6", borderRadius: "6px" }} />
                 ))}
+                <div style={{ height: "28px", width: "28px", background: "#f3f4f6", borderRadius: "6px" }} />
               </div>
             ))
           ) : paginados.length === 0 ? (
@@ -330,7 +358,7 @@ export default function Clientes() {
               const go = () => id != null && navigate(`/radar/${id}`);
               return (
                 <div key={String(id ?? idx)} onClick={go}
-                  style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr", padding: "13px 20px", borderBottom: idx < paginados.length - 1 ? "1px solid #f9fafb" : "none", alignItems: "center", cursor: "pointer", transition: "background .12s" }}
+                  style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1fr 52px", padding: "13px 20px", borderBottom: idx < paginados.length - 1 ? "1px solid #f9fafb" : "none", alignItems: "center", cursor: "pointer", transition: "background .12s" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
 
@@ -375,6 +403,21 @@ export default function Clientes() {
 
                   {/* Status */}
                   <div><StatusBadge status={r.semaforo} /></div>
+
+                  {/* Ações */}
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <button
+                      title="Excluir cliente"
+                      aria-label="Excluir cliente"
+                      onClick={e => { e.stopPropagation(); setDeleteTarget(r); }}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "30px", height: "30px", border: "1px solid #fecaca", borderRadius: "7px", background: "#fff", color: "#dc2626", cursor: "pointer", transition: "background .12s, border-color .12s", flexShrink: 0 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.borderColor = "#f87171"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#fecaca"; }}>
+                      <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               );
             })
@@ -411,6 +454,71 @@ export default function Clientes() {
 
       {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 29 }} />}
       <NovoClienteModal open={novoOpen} onOpenChange={setNovoOpen} onSaved={() => setReloadKey(k => k + 1)} />
+
+      <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open && !deleting) setDeleteTarget(null); }}>
+        <DialogContent style={{ maxWidth: "420px" }}>
+          <DialogHeader>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "50%", background: "#fef2f2", marginBottom: "12px" }}>
+              <svg width="20" height="20" fill="none" stroke="#dc2626" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </div>
+            <DialogTitle style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>Excluir cliente</DialogTitle>
+            <DialogDescription style={{ fontSize: "13px", color: "#6b7280", marginTop: "4px" }}>
+              Tem certeza que deseja excluir este cliente? Essa ação não poderá ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteTarget && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#f9fafb", border: "1px solid #f3f4f6", borderRadius: "8px", padding: "10px 14px", margin: "4px 0" }}>
+              <div style={{ width: "32px", height: "32px", borderRadius: "7px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: "#1d4ed8", flexShrink: 0 }}>
+                {nameInitials(deleteTarget.razao_social)}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: "13px", fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {deleteTarget.razao_social ?? "—"}
+                </div>
+                {deleteTarget.nome_fantasia && deleteTarget.nome_fantasia !== deleteTarget.razao_social && (
+                  <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {deleteTarget.nome_fantasia}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "8px" }}>
+            <button
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+              style={{ padding: "8px 16px", fontSize: "13px", fontWeight: 500, border: "1px solid #e5e7eb", borderRadius: "7px", background: "#fff", color: "#374151", cursor: deleting ? "default" : "pointer", opacity: deleting ? 0.5 : 1 }}>
+              Cancelar
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              style={{ display: "flex", alignItems: "center", gap: "7px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, border: "none", borderRadius: "7px", background: deleting ? "#f87171" : "#dc2626", color: "#fff", cursor: deleting ? "default" : "pointer", transition: "background .12s" }}
+              onMouseEnter={e => { if (!deleting) e.currentTarget.style.background = "#b91c1c"; }}
+              onMouseLeave={e => { if (!deleting) e.currentTarget.style.background = "#dc2626"; }}>
+              {deleting ? (
+                <>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ animation: "spin 1s linear infinite" }} aria-hidden="true">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                  Excluindo...
+                </>
+              ) : (
+                <>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  </svg>
+                  Excluir cliente
+                </>
+              )}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
