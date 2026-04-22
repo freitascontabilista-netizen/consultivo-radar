@@ -22,16 +22,16 @@ type ColName = (typeof COLUNAS)[number];
 type RowData = Partial<Record<ColName, string>>;
 
 const LINHA_EXEMPLO: Record<ColName, string> = {
-  razao_social: "EXEMPLO LTDA",
+  razao_social: "EMPRESA EXEMPLO LTDA",
   nome_fantasia: "Exemplo",
-  segmento: "Comércio",
+  segmento: "Comércio e Serviço",
   uf: "SP",
   regime_tributario: "Simples Nacional",
-  porte: "Pequena",
+  porte: "Pequeno",
   canal_preferido: "WhatsApp",
   frequencia_contato_dias: "30",
-  dores_mapeadas: "Custo alto de impostos",
-  objetivos_empresario: "Reduzir carga tributária",
+  dores_mapeadas: "Dificuldade financeira",
+  objetivos_empresario: "Crescer e organizar",
   observacoes: "Cliente preferencial",
 };
 
@@ -84,14 +84,47 @@ export function ImportarClientesModal({ open, onOpenChange, onSaved }: Props) {
 
   const close = () => { reset(); onOpenChange(false); };
 
-  // ── Download modelo CSV ──────────────────────────────────────────────────
+  // ── Download modelo XLSX ─────────────────────────────────────────────────
   const baixarModelo = () => {
-    const header = COLUNAS.join(",");
-    const exemplo = COLUNAS.map(c => `"${LINHA_EXEMPLO[c]}"`).join(",");
-    const blob = new Blob([header + "\n" + exemplo + "\n"], { type: "text/csv;charset=utf-8;" });
+    const wb = XLSX.utils.book_new();
+
+    // Monta as linhas: cabeçalho + exemplo
+    const dados = [
+      COLUNAS.map(c => c),                          // linha 1: cabeçalhos
+      COLUNAS.map(c => LINHA_EXEMPLO[c] ?? ""),     // linha 2: exemplo
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(dados);
+
+    // Negrito nos cabeçalhos (célula A1..K1)
+    COLUNAS.forEach((_, i) => {
+      const ref = XLSX.utils.encode_cell({ r: 0, c: i });
+      if (!ws[ref]) return;
+      ws[ref].s = { font: { bold: true } };
+    });
+
+    // Largura das colunas
+    ws["!cols"] = [
+      { wch: 30 }, // razao_social
+      { wch: 20 }, // nome_fantasia
+      { wch: 22 }, // segmento
+      { wch:  6 }, // uf
+      { wch: 20 }, // regime_tributario
+      { wch: 12 }, // porte
+      { wch: 20 }, // canal_preferido
+      { wch: 22 }, // frequencia_contato_dias
+      { wch: 30 }, // dores_mapeadas
+      { wch: 30 }, // objetivos_empresario
+      { wch: 30 }, // observacoes
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "Clientes");
+
+    // Gera o arquivo e dispara download
+    const wbArray = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbArray], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "modelo_importacao_clientes.csv";
+    a.href = url; a.download = "modelo_clientes.xlsx";
     a.click(); URL.revokeObjectURL(url);
   };
 
@@ -113,7 +146,7 @@ export function ImportarClientesModal({ open, onOpenChange, onSaved }: Props) {
           if (COLUNAS.includes(chave)) row[chave] = String(v ?? "").trim();
         }
         return row;
-      }).filter(r => r.razao_social && r.razao_social !== "EXEMPLO LTDA");
+      }).filter(r => r.razao_social && r.razao_social !== "EMPRESA EXEMPLO LTDA");
 
       setRows(normalizado);
       if (normalizado.length > 0) setPasso(2);
