@@ -16,6 +16,22 @@ const statusLabels: Record<StatusFilter, string> = {
   verde: "Em dia",
 };
 
+// Variações do banco que não casam por simples normalização de acentos
+const SEGMENTO_ALIAS: Record<string, string> = {
+  "servico e comercio": "Comércio e Serviço",
+  "serviço e comercio": "Comércio e Serviço",
+  "serviço e comércio": "Comércio e Serviço",
+};
+
+function normalizarSegmento(s: string | null | undefined): string | null {
+  if (!s) return null;
+  const strip = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const semAcento = strip(s);
+  if (SEGMENTO_ALIAS[semAcento]) return SEGMENTO_ALIAS[semAcento];
+  const match = SEGMENTOS_FIXOS.find(f => strip(f) === semAcento);
+  return match ?? s;
+}
+
 export default function Clientes() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<RadarConsultivoRow[]>([]);
@@ -60,11 +76,7 @@ export default function Clientes() {
     return () => { mounted = false; };
   }, [reloadKey]);
 
-  const segmentos = useMemo(() => {
-    const fromData = rows.map(r => r.segmento).filter(Boolean) as string[];
-    const merged = new Set([...SEGMENTOS_FIXOS, ...fromData]);
-    return Array.from(merged).sort();
-  }, [rows]);
+  const segmentos = SEGMENTOS_FIXOS;
 
   const regimes = useMemo(() => {
     const s = new Set(rows.map(r => r.regime_tributario).filter(Boolean) as string[]);
@@ -76,7 +88,7 @@ export default function Clientes() {
     const minDias = diasMin ? parseInt(diasMin, 10) : 0;
     return rows.filter(r => {
       if (statusFilter !== "todos" && r.semaforo !== statusFilter) return false;
-      if (segmentoFilter !== "todos" && r.segmento !== segmentoFilter) return false;
+      if (segmentoFilter !== "todos" && normalizarSegmento(r.segmento) !== segmentoFilter) return false;
       if (regimeFilter !== "todos" && r.regime_tributario !== regimeFilter) return false;
       if (minDias > 0 && (r.dias_sem_orientacao ?? 0) < minDias) return false;
       if (q) {
