@@ -49,7 +49,7 @@ interface EditForm {
   observacoes: string;
 }
 
-const ITENS_POR_PAGINA = 5;
+const ITENS_POR_PAGINA = 10;
 
 export default function RadarCliente() {
   const { clienteId = "" } = useParams();
@@ -485,12 +485,10 @@ export default function RadarCliente() {
                         );
                       })}
                       {totalPaginas > 1 && (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #f3f4f6", padding: "10px 18px" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", borderTop: "1px solid #f3f4f6", padding: "10px 18px" }}>
+                          <button onClick={() => setPaginaAtual(p => Math.max(1, p - 1))} disabled={paginaAtual === 1} style={{ padding: "4px 10px", border: "1px solid #e5e7eb", borderRadius: "6px", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#6b7280", opacity: paginaAtual === 1 ? .4 : 1 }}>← Anterior</button>
                           <span style={{ fontSize: "12px", color: "#9ca3af" }}>Página {paginaAtual} de {totalPaginas}</span>
-                          <div style={{ display: "flex", gap: "4px" }}>
-                            <button onClick={() => setPaginaAtual(p => Math.max(1, p - 1))} disabled={paginaAtual === 1} style={{ padding: "4px 10px", border: "1px solid #e5e7eb", borderRadius: "6px", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#6b7280", opacity: paginaAtual === 1 ? .4 : 1 }}>← Anterior</button>
-                            <button onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))} disabled={paginaAtual === totalPaginas} style={{ padding: "4px 10px", border: "1px solid #e5e7eb", borderRadius: "6px", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#6b7280", opacity: paginaAtual === totalPaginas ? .4 : 1 }}>Próxima →</button>
-                          </div>
+                          <button onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))} disabled={paginaAtual === totalPaginas} style={{ padding: "4px 10px", border: "1px solid #e5e7eb", borderRadius: "6px", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#6b7280", opacity: paginaAtual === totalPaginas ? .4 : 1 }}>Próxima →</button>
                         </div>
                       )}
                     </>
