@@ -84,6 +84,9 @@ export default function Orientacoes() {
   // View
   const [agrupamento, setAgrupamento] = useState<"data" | "cliente">("data");
 
+  // Pagination
+  const [pagina, setPagina] = useState(1);
+
   // ── Load ──────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -154,6 +157,17 @@ export default function Orientacoes() {
     });
   }, [interacoes, periodo, tipoFiltro, clienteFiltro, busca]);
 
+  useEffect(() => { setPagina(1); }, [periodo, tipoFiltro, clienteFiltro, busca, agrupamento]);
+
+  const ITEMS_POR_PAGINA = 10;
+
+  const pagedFiltered = useMemo(() => {
+    const start = (pagina - 1) * ITEMS_POR_PAGINA;
+    return filtered.slice(start, start + ITEMS_POR_PAGINA);
+  }, [filtered, pagina]);
+
+  const totalPaginas = Math.ceil(filtered.length / ITEMS_POR_PAGINA);
+
   // ── Metrics ───────────────────────────────────────────────────────────────────
 
   const metrics = useMemo(() => {
@@ -182,7 +196,7 @@ export default function Orientacoes() {
 
   const groupedByData = useMemo(() => {
     const map = new Map<string, InteracaoEnriquecida[]>();
-    for (const i of filtered) {
+    for (const i of pagedFiltered) {
       const key = i.data_interacao
         ? new Date(i.data_interacao).toISOString().slice(0, 10)
         : "sem-data";
@@ -190,17 +204,17 @@ export default function Orientacoes() {
       map.get(key)!.push(i);
     }
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filtered]);
+  }, [pagedFiltered]);
 
   const groupedByCliente = useMemo(() => {
     const map = new Map<string, { nome: string; fantasia: string | null; items: InteracaoEnriquecida[] }>();
-    for (const i of filtered) {
+    for (const i of pagedFiltered) {
       const key = String(i.cliente_id_real ?? "?");
       if (!map.has(key)) map.set(key, { nome: i.cliente_nome, fantasia: i.cliente_fantasia, items: [] });
       map.get(key)!.items.push(i);
     }
     return Array.from(map.entries()).sort((a, b) => b[1].items.length - a[1].items.length);
-  }, [filtered]);
+  }, [pagedFiltered]);
 
   // ── Client options for filter ─────────────────────────────────────────────────
 
@@ -415,6 +429,35 @@ export default function Orientacoes() {
           <TimelineByDate groups={groupedByData} navigate={navigate} />
         ) : (
           <TimelineByCliente groups={groupedByCliente} navigate={navigate} />
+        )}
+
+        {/* ── Pagination controls ── */}
+        {!loading && totalPaginas > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginTop: "24px" }}>
+            <button
+              onClick={() => setPagina(p => Math.max(1, p - 1))}
+              disabled={pagina === 1}
+              style={{ display: "flex", alignItems: "center", gap: "5px", padding: "7px 14px", fontSize: "13px", fontWeight: 500, border: "1px solid #e5e7eb", borderRadius: "8px", background: pagina === 1 ? "#f9fafb" : "#fff", color: pagina === 1 ? "#9ca3af" : "#374151", cursor: pagina === 1 ? "not-allowed" : "pointer", transition: "all .15s" }}
+              onMouseEnter={e => { if (pagina !== 1) e.currentTarget.style.background = "#f3f4f6"; }}
+              onMouseLeave={e => { if (pagina !== 1) e.currentTarget.style.background = "#fff"; }}
+            >
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+              Anterior
+            </button>
+            <span style={{ fontSize: "13px", color: "#374151", fontWeight: 500 }}>
+              Página {pagina} de {totalPaginas}
+            </span>
+            <button
+              onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
+              disabled={pagina === totalPaginas}
+              style={{ display: "flex", alignItems: "center", gap: "5px", padding: "7px 14px", fontSize: "13px", fontWeight: 500, border: "1px solid #e5e7eb", borderRadius: "8px", background: pagina === totalPaginas ? "#f9fafb" : "#fff", color: pagina === totalPaginas ? "#9ca3af" : "#374151", cursor: pagina === totalPaginas ? "not-allowed" : "pointer", transition: "all .15s" }}
+              onMouseEnter={e => { if (pagina !== totalPaginas) e.currentTarget.style.background = "#f3f4f6"; }}
+              onMouseLeave={e => { if (pagina !== totalPaginas) e.currentTarget.style.background = "#fff"; }}
+            >
+              Próxima
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
         )}
       </main>
 
