@@ -45,6 +45,7 @@ export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
   const [frequencia, setFrequencia] = useState<number>(30);
   const [dores, setDores] = useState("");
   const [objetivos, setObjetivos] = useState("");
+  const [observacoes, setObservacoes] = useState("");
 
   const reset = () => {
     setRazaoSocial("");
@@ -58,6 +59,7 @@ export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
     setFrequencia(30);
     setDores("");
     setObjetivos("");
+    setObservacoes("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,6 +81,7 @@ export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
       frequencia_contato_dias: frequencia,
       dores_mapeadas: dores.trim() || null,
       objetivos_empresario: objetivos.trim() || null,
+      observacoes: observacoes.trim() || null,
     };
     const { error } = await supabase.from("clientes").insert(payload);
     setSaving(false);
@@ -174,6 +177,10 @@ export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
             <div className="sm:col-span-2 space-y-2">
               <Label htmlFor="objetivos">Objetivos do Empresário</Label>
               <Textarea id="objetivos" value={objetivos} onChange={(e) => setObjetivos(e.target.value)} rows={3} maxLength={2000} />
+            </div>
+            <div className="sm:col-span-2 space-y-2">
+              <Label htmlFor="observacoes">Observações / Particularidades</Label>
+              <Textarea id="observacoes" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} rows={3} maxLength={2000} placeholder="Ex.: Cliente antigo, prefere contato por WhatsApp..." />
             </div>
           </div>
           <DialogFooter>

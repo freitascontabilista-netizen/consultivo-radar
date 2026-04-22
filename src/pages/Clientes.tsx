@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase, type RadarConsultivoRow, type SemaforoStatus } from "@/lib/supabase";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NovoClienteModal, SEGMENTOS as SEGMENTOS_FIXOS } from "@/components/NovoClienteModal";
+import { ImportarClientesModal } from "@/components/ImportarClientesModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
@@ -38,6 +39,7 @@ export default function Clientes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [novoOpen, setNovoOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<RadarConsultivoRow | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -346,13 +348,22 @@ export default function Clientes() {
               {loading ? "Carregando..." : `${filtered.length} cliente${filtered.length !== 1 ? "s" : ""}${hasFilters ? " encontrado" + (filtered.length !== 1 ? "s" : "") + " com os filtros aplicados" : " cadastrados na carteira"}`}
             </p>
           </div>
-          <button onClick={() => setNovoOpen(true)}
-            style={{ display: "flex", alignItems: "center", gap: "7px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
-            onMouseEnter={e => e.currentTarget.style.background = "#1e40af"}
-            onMouseLeave={e => e.currentTarget.style.background = "#1d4ed8"}>
-            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-            Novo cliente
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+            <button onClick={() => setImportOpen(true)}
+              style={{ display: "flex", alignItems: "center", gap: "7px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#9ca3af"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#d1d5db"; }}>
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Importar clientes
+            </button>
+            <button onClick={() => setNovoOpen(true)}
+              style={{ display: "flex", alignItems: "center", gap: "7px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#1e40af"}
+              onMouseLeave={e => e.currentTarget.style.background = "#1d4ed8"}>
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              Novo cliente
+            </button>
+          </div>
         </div>
 
         {/* Filter bar */}
@@ -585,6 +596,7 @@ export default function Clientes() {
 
       {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 29 }} />}
       <NovoClienteModal open={novoOpen} onOpenChange={setNovoOpen} onSaved={() => setReloadKey(k => k + 1)} />
+      <ImportarClientesModal open={importOpen} onOpenChange={setImportOpen} onSaved={() => setReloadKey(k => k + 1)} />
 
       <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open && !deleting) { setDeleteTarget(null); setDeleteError(null); } }}>
         <DialogContent style={{ maxWidth: "420px" }}>
