@@ -10,13 +10,13 @@ import {
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { RegistrarOrientacaoModal } from "@/components/RegistrarOrientacaoModal";
-import { Pencil, X, Trash2 } from "lucide-react";
+import { Pencil, X, Trash2, Calendar, Clock, AlertCircle, CheckCircle2, Tag, MapPin, Building2, StickyNote, Zap, Target, AlertTriangle } from "lucide-react";
 
 const tipoConfig: Record<string, { label: string; bg: string; color: string }> = {
-  consultiva:     { label: "Consultiva",    bg: "#dcfce7", color: "#16a34a" },
-  suporte:        { label: "Suporte",       bg: "#f1f5f9", color: "#475569" },
-  relacionamento: { label: "Relacionamento",bg: "#dbeafe", color: "#1d4ed8" },
-  comercial:      { label: "Comercial",     bg: "#f3e8ff", color: "#7e22ce" },
+  consultiva:     { label: "Consultiva",     bg: "#dbeafe", color: "#1d4ed8" },
+  relacionamento: { label: "Relacionamento", bg: "#f3e8ff", color: "#7e22ce" },
+  suporte:        { label: "Suporte",        bg: "#f1f5f9", color: "#475569" },
+  comercial:      { label: "Comercial",      bg: "#dcfce7", color: "#16a34a" },
 };
 
 const urgenciaConfig: Record<string, { label: string; bg: string; color: string }> = {
@@ -32,6 +32,22 @@ function formatDate(value?: string | null) {
     return new Date(value).toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   } catch {
     return value;
+  }
+}
+
+function formatDateTimeline(value?: string | null): string {
+  if (!value) return "—";
+  try {
+    const d = new Date(value);
+    const now = new Date();
+    const time = d.toLocaleString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    if (d.toDateString() === now.toDateString()) return `Hoje, ${time}`;
+    const ontem = new Date(now); ontem.setDate(now.getDate() - 1);
+    if (d.toDateString() === ontem.toDateString()) return `Ontem, ${time}`;
+    const data = d.toLocaleString("pt-BR", { day: "2-digit", month: "short" }).replace(".", "");
+    return `${data}, ${time}`;
+  } catch {
+    return value ?? "—";
   }
 }
 
@@ -236,7 +252,7 @@ export default function RadarCliente() {
 
   const initials = (email: string) => email.split("@")[0].slice(0, 2).toUpperCase();
 
-  const diasColor = (d: number) => d >= 60 ? "#ef4444" : d >= 30 ? "#f59e0b" : "#10b981";
+  const diasColor = (d: number) => d === 0 ? "#10b981" : d <= 7 ? "#f59e0b" : "#ef4444";
 
   const inputClass = "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
   const labelClass = "block text-xs font-medium text-gray-600 mb-1";
@@ -328,73 +344,86 @@ export default function RadarCliente() {
         ) : (
           <>
             {/* ── Client header card ── */}
-            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "20px 24px", marginBottom: "16px" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "24px 28px", marginBottom: "16px", boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "20px", flexWrap: "wrap" }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "4px" }}>
-                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: 700, color: "#1d4ed8", flexShrink: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap", marginBottom: "12px" }}>
+                    {/* Avatar */}
+                    <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "linear-gradient(135deg, #1d4ed8, #1e40af)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: 800, color: "#fff", flexShrink: 0, boxShadow: "0 4px 14px rgba(29,78,216,.3)" }}>
                       {(cliente.razao_social ?? "?").trim().split(" ").filter(Boolean).slice(0,2).map((w: string) => w[0]).join("").toUpperCase()}
                     </div>
-                    <div>
-                      <h1 style={{ fontSize: "18px", fontWeight: 700, color: "#111827", margin: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", margin: 0, lineHeight: 1.2 }}>
                         {cliente.razao_social ?? "Cliente"}
                       </h1>
                       {cliente.nome_fantasia && cliente.nome_fantasia !== cliente.razao_social && (
-                        <p style={{ fontSize: "12px", color: "#9ca3af", margin: 0 }}>{cliente.nome_fantasia}</p>
+                        <p style={{ fontSize: "13px", color: "#9ca3af", margin: "3px 0 0" }}>{cliente.nome_fantasia}</p>
                       )}
                     </div>
                     <button onClick={openEdit}
-                      style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#dbeafe"}
-                      onMouseLeave={e => e.currentTarget.style.background = "#eff6ff"}>
-                      <Pencil size={11} /> Editar cadastro
+                      style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 16px", fontSize: "12px", fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(29,78,216,.3)", flexShrink: 0 }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#1e40af"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#1d4ed8"}>
+                      <Pencil size={12} /> Editar cadastro
                     </button>
                   </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px", marginTop: "10px" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
                     <StatusBadge status={cliente.semaforo} />
                     {cliente.segmento && (
-                      <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: "#f1f5f9", border: "1px solid #e5e7eb", padding: "3px 10px", fontSize: "11px", fontWeight: 500, color: "#475569" }}>
-                        {cliente.segmento}
-                      </span>
-                    )}
-                    {(cliente as any).uf && (
-                      <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: "#f1f5f9", border: "1px solid #e5e7eb", padding: "3px 10px", fontSize: "11px", fontWeight: 500, color: "#475569" }}>
-                        {(cliente as any).uf}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", borderRadius: "20px", background: "#eff6ff", border: "1px solid #bfdbfe", padding: "4px 11px", fontSize: "11px", fontWeight: 600, color: "#1d4ed8" }}>
+                        <Tag size={10} /> {cliente.segmento}
                       </span>
                     )}
                     {(cliente as any).regime_tributario && (
-                      <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "3px 10px", fontSize: "11px", fontWeight: 500, color: "#166534" }}>
-                        {(cliente as any).regime_tributario}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", borderRadius: "20px", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "4px 11px", fontSize: "11px", fontWeight: 600, color: "#16a34a" }}>
+                        <Building2 size={10} /> {(cliente as any).regime_tributario}
+                      </span>
+                    )}
+                    {(cliente as any).uf && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", borderRadius: "20px", background: "#f8fafc", border: "1px solid #e2e8f0", padding: "4px 11px", fontSize: "11px", fontWeight: 500, color: "#64748b" }}>
+                        <MapPin size={10} /> {(cliente as any).uf}
                       </span>
                     )}
                     {(cliente as any).porte && (
-                      <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", background: "#f1f5f9", border: "1px solid #e5e7eb", padding: "3px 10px", fontSize: "11px", fontWeight: 500, color: "#475569" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", borderRadius: "20px", background: "#f8fafc", border: "1px solid #e2e8f0", padding: "4px 11px", fontSize: "11px", fontWeight: 500, color: "#64748b" }}>
                         {(cliente as any).porte}
                       </span>
                     )}
                   </div>
                   {(cliente as any).observacoes && (
-                    <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", padding: "10px 14px", marginTop: "12px" }}>
-                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: "4px" }}>Particularidades</div>
+                    <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderLeft: "4px solid #f59e0b", borderRadius: "8px", padding: "10px 14px", marginTop: "14px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: "5px" }}>
+                        <StickyNote size={11} /> Particularidades
+                      </div>
                       <div style={{ fontSize: "13px", color: "#78350f", lineHeight: 1.6 }}>{(cliente as any).observacoes}</div>
                     </div>
                   )}
                 </div>
 
                 {/* Dias destaque */}
-                <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "14px 20px", textAlign: "center", flexShrink: 0 }}>
-                  <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: "4px" }}>Dias sem orientação</div>
-                  <div style={{ fontSize: "38px", fontWeight: 800, lineHeight: 1, color: diasColor(dias) }}>{dias}</div>
-                </div>
+                {(() => {
+                  const bg = dias === 0 ? "#f0fdf4" : dias <= 7 ? "#fffbeb" : "#fef2f2";
+                  const border = dias === 0 ? "#bbf7d0" : dias <= 7 ? "#fde68a" : "#fecaca";
+                  const tagBg = dias === 0 ? "#dcfce7" : dias <= 7 ? "#fef9c3" : "#fee2e2";
+                  const tagColor = dias === 0 ? "#16a34a" : dias <= 7 ? "#a16207" : "#dc2626";
+                  const tagLabel = dias === 0 ? "Em dia" : dias <= 7 ? "Atenção" : "Crítico";
+                  return (
+                    <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: "12px", padding: "16px 24px", textAlign: "center", flexShrink: 0, minWidth: "130px" }}>
+                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: "6px" }}>Dias sem orientação</div>
+                      <div style={{ fontSize: "44px", fontWeight: 900, lineHeight: 1, color: diasColor(dias) }}>{dias}</div>
+                      <span style={{ display: "inline-block", marginTop: "8px", background: tagBg, color: tagColor, borderRadius: "20px", padding: "2px 10px", fontSize: "10px", fontWeight: 700 }}>{tagLabel}</span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
             {/* ── Metric cards ── */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px", marginBottom: "16px" }}>
-              <MetricCard label="Última orientação" value={ultimaOrientacao} loading={loading} />
-              <MetricCard label="Dias sem orientação" value={dias} tone={dias >= 60 ? "critical" : dias >= 30 ? "warning" : "success"} loading={loading} />
-              <MetricCard label="Follow-ups pendentes" value={followups} loading={loading} />
-              <MetricCard label="Total de orientações" value={totalOrientacoes} loading={loading} />
+              <MetricCard label="Última orientação"    value={ultimaOrientacao} loading={loading} icon={<Calendar size={15}/>}     accentColor="#1d4ed8" />
+              <MetricCard label="Dias sem orientação"  value={dias}             loading={loading} icon={<Clock size={15}/>}          accentColor={diasColor(dias)} tone={dias === 0 ? "success" : dias <= 7 ? "warning" : "critical"} />
+              <MetricCard label="Follow-ups pendentes" value={followups}        loading={loading} icon={<AlertCircle size={15}/>}   accentColor="#f59e0b" />
+              <MetricCard label="Total de orientações" value={totalOrientacoes} loading={loading} icon={<CheckCircle2 size={15}/>}  accentColor="#10b981" tone="success" />
             </div>
 
             {/* ── Two-column layout ── */}
@@ -403,7 +432,12 @@ export default function RadarCliente() {
               {/* Timeline */}
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <h2 style={{ fontSize: "14px", fontWeight: 700, color: "#111827", margin: 0 }}>Timeline de interações</h2>
+                  <h2 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 700, color: "#111827", margin: 0 }}>
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "#eff6ff" }}>
+                      <Calendar size={14} color="#1d4ed8" />
+                    </span>
+                    Timeline de interações
+                  </h2>
                   <span style={{ fontSize: "11px", color: "#9ca3af", background: "#f3f4f6", padding: "2px 8px", borderRadius: "10px" }}>{interacoes.length} registros</span>
                 </div>
                 {selectedIds.size > 0 && (
@@ -437,49 +471,55 @@ export default function RadarCliente() {
                       {interacoesPaginadas.map((it, idx) => {
                         const cfg = tipoConfig[it.tipo as string] ?? tipoConfig.suporte;
                         const isSelected = selectedIds.has(String(it.id));
+                        const isLast = idx === interacoesPaginadas.length - 1;
                         return (
                           <div key={String(it.id)}
-                            style={{ padding: "14px 18px", borderBottom: idx < interacoesPaginadas.length - 1 ? "1px solid #f9fafb" : "none", background: isSelected ? "#eff6ff" : "transparent", display: "flex", alignItems: "flex-start", gap: "10px", transition: "background .1s" }}
-                            onMouseEnter={e => { setHoveredId(String(it.id)); if (!isSelected) e.currentTarget.style.background = "#f9fafb"; }}
+                            style={{ display: "flex", background: isSelected ? "#eff6ff" : "transparent", transition: "background .15s" }}
+                            onMouseEnter={e => { setHoveredId(String(it.id)); if (!isSelected) e.currentTarget.style.background = "#f8fafc"; }}
                             onMouseLeave={e => { setHoveredId(null); if (!isSelected) e.currentTarget.style.background = "transparent"; }}>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleSelect(String(it.id))}
-                              style={{ marginTop: "3px", cursor: "pointer", width: "15px", height: "15px", flexShrink: 0, accentColor: "#1d4ed8" }}
-                            />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "7px", flexWrap: "wrap" }}>
-                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", borderRadius: "20px", background: cfg.bg, color: cfg.color, padding: "3px 9px", fontSize: "11px", fontWeight: 600 }}>
-                                    <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: cfg.color }} />
-                                    {cfg.label}
-                                  </span>
-                                  {(it as any).canal && (
-                                    <span style={{ fontSize: "10px", color: "#9ca3af", background: "#f3f4f6", padding: "2px 6px", borderRadius: "8px" }}>{(it as any).canal}</span>
-                                  )}
-                                  <span style={{ fontSize: "11px", color: "#9ca3af" }}>
-                                    {formatDate(it.data_interacao ?? (it as any).data ?? it.criado_em ?? (it as any).created_at)}
-                                  </span>
+                            {/* Linha vertical colorida por tipo */}
+                            <div style={{ width: "4px", background: cfg.color, flexShrink: 0, opacity: 0.85 }} />
+                            {/* Conteúdo */}
+                            <div style={{ flex: 1, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: "10px", borderBottom: !isLast ? "1px solid #f3f4f6" : "none" }}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleSelect(String(it.id))}
+                                style={{ marginTop: "3px", cursor: "pointer", width: "15px", height: "15px", flexShrink: 0, accentColor: "#1d4ed8" }}
+                              />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "7px", flexWrap: "wrap" }}>
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", borderRadius: "20px", background: cfg.bg, color: cfg.color, padding: "3px 9px", fontSize: "11px", fontWeight: 600 }}>
+                                      <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: cfg.color }} />
+                                      {cfg.label}
+                                    </span>
+                                    {(it as any).canal && (
+                                      <span style={{ fontSize: "10px", color: "#9ca3af", background: "#f3f4f6", padding: "2px 6px", borderRadius: "8px" }}>{(it as any).canal}</span>
+                                    )}
+                                    <span style={{ fontSize: "11px", color: "#9ca3af", fontWeight: 500 }}>
+                                      {formatDateTimeline(it.data_interacao ?? (it as any).data ?? it.criado_em ?? (it as any).created_at)}
+                                    </span>
+                                  </div>
+                                  <button onClick={() => handleDeleteInteracao(String(it.id))} disabled={deletingId === String(it.id)}
+                                    style={{ background: "none", border: "none", cursor: "pointer", color: "#d1d5db", padding: "2px", display: "flex", alignItems: "center" }}
+                                    onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")}
+                                    onMouseLeave={e => (e.currentTarget.style.color = "#d1d5db")}
+                                    title="Excluir">
+                                    {deletingId === String(it.id)
+                                      ? <span style={{ fontSize: "11px", color: "#9ca3af" }}>Excluindo...</span>
+                                      : <Trash2 size={14} />}
+                                  </button>
                                 </div>
-                                <button onClick={() => handleDeleteInteracao(String(it.id))} disabled={deletingId === String(it.id)}
-                                  style={{ background: "none", border: "none", cursor: "pointer", color: "#d1d5db", padding: "2px", display: "flex", alignItems: "center" }}
-                                  onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")}
-                                  onMouseLeave={e => (e.currentTarget.style.color = "#d1d5db")}
-                                  title="Excluir">
-                                  {deletingId === String(it.id)
-                                    ? <span style={{ fontSize: "11px", color: "#9ca3af" }}>Excluindo...</span>
-                                    : <Trash2 size={14} />}
-                                </button>
+                                <p style={{ margin: "7px 0 0", fontSize: "13px", fontWeight: 600, color: "#111827" }}>{it.assunto ?? "Sem assunto"}</p>
+                                {it.resumo && <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#6b7280", lineHeight: 1.5 }}>{it.resumo}</p>}
+                                {(it as any).proximo_passo && (
+                                  <div style={{ marginTop: "6px", display: "flex", alignItems: "flex-start", gap: "5px", fontSize: "11px", color: "#d97706", background: "#fffbeb", padding: "4px 8px", borderRadius: "6px", border: "1px solid #fde68a" }}>
+                                    <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: "1px" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                    {(it as any).proximo_passo}
+                                  </div>
+                                )}
                               </div>
-                              <p style={{ margin: "7px 0 0", fontSize: "13px", fontWeight: 600, color: "#111827" }}>{it.assunto ?? "Sem assunto"}</p>
-                              {it.resumo && <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#6b7280", lineHeight: 1.5 }}>{it.resumo}</p>}
-                              {(it as any).proximo_passo && (
-                                <div style={{ marginTop: "6px", display: "flex", alignItems: "flex-start", gap: "5px", fontSize: "11px", color: "#d97706", background: "#fffbeb", padding: "4px 8px", borderRadius: "6px", border: "1px solid #fde68a" }}>
-                                  <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: "1px" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                                  {(it as any).proximo_passo}
-                                </div>
-                              )}
                             </div>
                           </div>
                         );
@@ -499,7 +539,12 @@ export default function RadarCliente() {
               {/* Ações consultivas */}
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <h2 style={{ fontSize: "14px", fontWeight: 700, color: "#111827", margin: 0 }}>Ações consultivas abertas</h2>
+                  <h2 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 700, color: "#111827", margin: 0 }}>
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "#fffbeb" }}>
+                      <Zap size={14} color="#f59e0b" />
+                    </span>
+                    Ações consultivas abertas
+                  </h2>
                   {acoes.length > 0 && (
                     <span style={{ fontSize: "11px", fontWeight: 700, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", padding: "2px 8px", borderRadius: "10px" }}>{acoes.length}</span>
                   )}
@@ -557,13 +602,17 @@ export default function RadarCliente() {
                   <div style={{ marginTop: "16px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
                     {(cliente as any).dores_mapeadas && (
                       <div style={{ padding: "14px 16px", borderBottom: (cliente as any).objetivos_empresario ? "1px solid #f3f4f6" : "none" }}>
-                        <p style={{ margin: "0 0 5px", fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em" }}>Dores mapeadas</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "5px", margin: "0 0 6px", fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em" }}>
+                          <AlertTriangle size={10} color="#ef4444" /> Dores mapeadas
+                        </div>
                         <p style={{ margin: 0, fontSize: "12px", color: "#374151", lineHeight: 1.6 }}>{(cliente as any).dores_mapeadas}</p>
                       </div>
                     )}
                     {(cliente as any).objetivos_empresario && (
                       <div style={{ padding: "14px 16px" }}>
-                        <p style={{ margin: "0 0 5px", fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em" }}>Objetivos do empresário</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "5px", margin: "0 0 6px", fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".06em" }}>
+                          <Target size={10} color="#1d4ed8" /> Objetivos do empresário
+                        </div>
                         <p style={{ margin: 0, fontSize: "12px", color: "#374151", lineHeight: 1.6 }}>{(cliente as any).objetivos_empresario}</p>
                       </div>
                     )}
