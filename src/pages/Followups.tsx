@@ -212,7 +212,7 @@ export default function Followups() {
     { label: "Dashboard",     path: "/",            active: false },
     { label: "Clientes",      path: "/clientes",    active: false },
     { label: "Orientações",   path: "/orientacoes", active: false },
-    { label: "Follow-ups",    path: "/followups",   active: true  },
+    { label: "Acompanhamentos", path: "/followups",   active: true  },
     { label: "Administração", path: "/admin",       active: false },
   ];
 
@@ -370,14 +370,14 @@ export default function Followups() {
         {/* page title */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
           <div>
-            <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", margin: 0 }}>Follow-ups</h1>
+            <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", margin: 0 }}>Acompanhamentos</h1>
             <p style={{ fontSize: "13px", color: "#6b7280", margin: "3px 0 0" }}>Acompanhe e gerencie os próximos passos com seus clientes</p>
           </div>
           <button onClick={() => setModalOpen(true)}
             style={{ display: "inline-flex", alignItems: "center", gap: "7px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer", boxShadow: "0 1px 3px rgba(29,78,216,.3)" }}
             onMouseEnter={e => e.currentTarget.style.background = "#1e40af"}
             onMouseLeave={e => e.currentTarget.style.background = "#1d4ed8"}>
-            <Plus size={15} /> Novo follow-up
+            <Plus size={15} /> Novo acompanhamento
           </button>
         </div>
 
@@ -462,8 +462,8 @@ export default function Followups() {
             <div style={{ width: "44px", height: "44px", background: "#f3f4f6", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", color: "#d1d5db" }}>
               <CheckCircle size={20} />
             </div>
-            <p style={{ fontSize: "14px", fontWeight: 600, color: "#374151", margin: 0 }}>Nenhum follow-up encontrado</p>
-            <p style={{ fontSize: "12px", color: "#9ca3af", margin: "4px 0 0" }}>Tente ajustar os filtros ou crie um novo follow-up.</p>
+            <p style={{ fontSize: "14px", fontWeight: 600, color: "#374151", margin: 0 }}>Nenhum acompanhamento encontrado</p>
+            <p style={{ fontSize: "12px", color: "#9ca3af", margin: "4px 0 0" }}>Tente ajustar os filtros ou crie um novo acompanhamento.</p>
           </div>
         ) : (
           <>
@@ -480,7 +480,7 @@ export default function Followups() {
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.45)", padding: "16px" }}>
           <div style={{ width: "100%", maxWidth: "360px", borderRadius: "14px", background: "#fff", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-              <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "#111827" }}>Adiar follow-up</h3>
+              <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "#111827" }}>Adiar acompanhamento</h3>
               <button onClick={() => setAdiarId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><X size={18} /></button>
             </div>
             <div style={{ padding: "20px" }}>
@@ -503,7 +503,7 @@ export default function Followups() {
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.45)", padding: "16px" }}>
           <div style={{ width: "100%", maxWidth: "500px", borderRadius: "14px", background: "#fff", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid #e8eaed" }}>
-              <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "#111827" }}>Novo follow-up</h3>
+              <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "#111827" }}>Novo acompanhamento</h3>
               <button onClick={() => setModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><X size={18} /></button>
             </div>
             <form onSubmit={handleNovoFollowup}>
@@ -546,7 +546,7 @@ export default function Followups() {
                 </div>
                 <div>
                   <label className={labelCls}>Descrição (opcional)</label>
-                  <textarea rows={3} className={inputCls} value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Contexto ou detalhes do follow-up..." />
+                  <textarea rows={3} className={inputCls} value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Contexto ou detalhes do acompanhamento..." />
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", padding: "14px 24px", borderTop: "1px solid #e8eaed" }}>
@@ -555,7 +555,7 @@ export default function Followups() {
                 </button>
                 <button type="submit" disabled={saving}
                   style={{ background: "#1d4ed8", border: "none", borderRadius: "8px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: "#fff", cursor: "pointer", opacity: saving ? .6 : 1 }}>
-                  {saving ? "Salvando..." : "Criar follow-up"}
+                  {saving ? "Salvando..." : "Criar acompanhamento"}
                 </button>
               </div>
             </form>

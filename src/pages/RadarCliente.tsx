@@ -264,7 +264,7 @@ export default function RadarCliente() {
     { label: "Dashboard",     path: "/",             active: false },
     { label: "Clientes",      path: "/clientes",     active: true  },
     { label: "Orientações",   path: "/orientacoes",  active: false },
-    { label: "Follow-ups",    path: "/followups",    active: false },
+    { label: "Acompanhamentos", path: "/followups",    active: false },
     { label: "Administração", path: "/admin",        active: false },
   ];
 
@@ -422,7 +422,7 @@ export default function RadarCliente() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px", marginBottom: "16px" }}>
               <MetricCard label="Última orientação"    value={ultimaOrientacao} loading={loading} icon={<Calendar size={15}/>}     accentColor="#1d4ed8" />
               <MetricCard label="Dias sem orientação"  value={dias}             loading={loading} icon={<Clock size={15}/>}          accentColor={diasColor(dias)} tone={dias === 0 ? "success" : dias <= 7 ? "warning" : "critical"} />
-              <MetricCard label="Follow-ups pendentes" value={followups}        loading={loading} icon={<AlertCircle size={15}/>}   accentColor="#f59e0b" />
+              <MetricCard label="Acompanhamentos pendentes" value={followups}        loading={loading} icon={<AlertCircle size={15}/>}   accentColor="#f59e0b" />
               <MetricCard label="Total de orientações" value={totalOrientacoes} loading={loading} icon={<CheckCircle2 size={15}/>}  accentColor="#10b981" tone="success" />
             </div>
 

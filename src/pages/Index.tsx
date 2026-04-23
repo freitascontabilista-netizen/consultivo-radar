@@ -117,7 +117,7 @@ export default function Index() {
     { label: "Dashboard", path: "/", active: true },
     { label: "Clientes", path: "/clientes", active: false },
     { label: "Orientações", path: "/orientacoes", active: false },
-    { label: "Follow-ups", path: "/followups", active: false },
+    { label: "Acompanhamentos", path: "/followups", active: false },
     { label: "Administração", path: "/admin", active: false },
   ];
 
@@ -293,7 +293,7 @@ export default function Index() {
             icon={<svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
           />
           <KpiCard
-            label="Follow-ups" value={displayCounts.followups} sub="pendentes na carteira"
+            label="Acompanhamentos" value={displayCounts.followups} sub="pendentes na carteira"
             accent="#7c3aed" border="#7c3aed"
             gradient="linear-gradient(135deg, #f8f5ff 0%, #ede9fe 100%)"
             icon={<svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>}
@@ -517,7 +517,7 @@ export default function Index() {
               {[
                 { label: "Ver todos os clientes", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", path: "/clientes", color: "#1d4ed8", hoverBg: "#eff6ff", hoverBorder: "#bfdbfe" },
                 { label: "Registrar orientação", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8", path: "/", color: "#16a34a", hoverBg: "#f0fdf4", hoverBorder: "#bbf7d0" },
-                { label: "Follow-ups pendentes", icon: "M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11", path: "/", color: "#7c3aed", hoverBg: "#f5f3ff", hoverBorder: "#ddd6fe" },
+                { label: "Acompanhamentos pendentes", icon: "M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11", path: "/", color: "#7c3aed", hoverBg: "#f5f3ff", hoverBorder: "#ddd6fe" },
                 { label: "Administração", icon: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z", path: "/admin", color: "#374151", hoverBg: "#f9fafb", hoverBorder: "#d1d5db" },
               ].map(a => (
                 <button key={a.label} onClick={() => navigate(a.path)}

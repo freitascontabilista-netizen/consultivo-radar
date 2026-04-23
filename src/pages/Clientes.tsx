@@ -267,7 +267,7 @@ export default function Clientes() {
     { label: "Dashboard", path: "/", active: false },
     { label: "Clientes",  path: "/clientes", active: true },
     { label: "Orientações", path: "/orientacoes", active: false },
-    { label: "Follow-ups", path: "/followups", active: false },
+    { label: "Acompanhamentos", path: "/followups", active: false },
     { label: "Administração", path: "/admin", active: false },
   ];
 

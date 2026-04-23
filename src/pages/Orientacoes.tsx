@@ -59,7 +59,7 @@ const NAV = [
   { label: "Dashboard",    path: "/",             active: false },
   { label: "Clientes",     path: "/clientes",     active: false },
   { label: "Orientações",  path: "/orientacoes",  active: true  },
-  { label: "Follow-ups",   path: "/followups",    active: false },
+  { label: "Acompanhamentos", path: "/followups",    active: false },
   { label: "Administração",path: "/admin",        active: false },
 ];
 
