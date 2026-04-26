@@ -1,16 +1,39 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase, type RadarConsultivoRow, type SemaforoStatus } from "@/lib/supabase";
+import { TIPOS_ORIENTACAO } from "@/lib/constants";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NovoClienteModal } from "@/components/NovoClienteModal";
 
-const TIPO_DISPLAY = [
-  { key: "fiscal",       label: "Fiscal",        color: "#3B82F6" },
-  { key: "trabalhista",  label: "Trabalhista",    color: "#EC4899" },
-  { key: "contabil",     label: "Contábil",       color: "#06B6D4" },
-  { key: "societario",   label: "Societário",     color: "#F97316" },
-  { key: "planejamento", label: "Planejamento",   color: "#22C55E" },
-];
+const TIPO_CHART_COLORS: Record<string, string> = {
+  fiscal:         "#3B82F6",
+  trabalhista:    "#EC4899",
+  contabil:       "#06B6D4",
+  societario:     "#F97316",
+  planejamento:   "#22C55E",
+  consultiva:     "#16A34A",
+  suporte:        "#475569",
+  relacionamento: "#8B5CF6",
+  comercial:      "#A855F7",
+};
+
+const TIPO_SHORT_LABELS: Record<string, string> = {
+  fiscal:         "Fiscal",
+  trabalhista:    "Trabalhista",
+  contabil:       "Contábil",
+  societario:     "Societário",
+  planejamento:   "Planejamento",
+  consultiva:     "Consultiva",
+  suporte:        "Suporte",
+  relacionamento: "Relacionamento",
+  comercial:      "Comercial",
+};
+
+const TIPO_DISPLAY = TIPOS_ORIENTACAO.map(t => ({
+  key:   t.key,
+  label: TIPO_SHORT_LABELS[t.key] ?? t.key,
+  color: TIPO_CHART_COLORS[t.key]  ?? t.color,
+}));
 
 function TipoDonut({ data, total }: { data: [string, number][]; total: number }) {
   const colorMap: Record<string, string> = Object.fromEntries(TIPO_DISPLAY.map(t => [t.key, t.color]));
