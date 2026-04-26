@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -38,6 +39,7 @@ const CANAIS = ["WhatsApp", "E-mail", "Telefone", "Reunião presencial", "Videoc
 export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, onSaved }: Props) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [loadingIA, setLoadingIA] = useState(false);
   const [clientes, setClientes] = useState<ClienteOpt[]>([]);
   const [loadingClientes, setLoadingClientes] = useState(false);
   const [clienteId, setClienteId] = useState<string>("");
@@ -77,6 +79,23 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
     if (open && clientes.length === 0) fetchClientes();
     if (open && clienteIdPreSelected != null) setClienteId(String(clienteIdPreSelected));
   }, [open]);
+
+  const handleGerarIA = async () => {
+    setLoadingIA(true);
+    const { data, error } = await supabase.functions.invoke("sugerir-proximo-passo", {
+      body: { descricao: resumo, assunto },
+    });
+    setLoadingIA(false);
+    if (error || !data?.sugestao) {
+      toast({
+        title: "Erro ao gerar sugestão",
+        description: error?.message ?? "Tente novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setProximoPasso(data.sugestao);
+  };
 
   const reset = () => {
     setTipo("fiscal");
@@ -186,7 +205,20 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
             <Textarea rows={3} value={resumo} onChange={e => setResumo(e.target.value)} placeholder="Descreva o que foi orientado…" />
           </div>
           <div className="space-y-1.5">
-            <Label>Próximo passo (gera ação consultiva)</Label>
+            <div className="flex items-center justify-between">
+              <Label>Próximo passo (gera ação consultiva)</Label>
+              {tipo === "consultiva" && (
+                <button
+                  type="button"
+                  onClick={handleGerarIA}
+                  disabled={resumo.length < 20 || loadingIA}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Sparkles size={13} />
+                  {loadingIA ? "Gerando…" : "Gerar com IA"}
+                </button>
+              )}
+            </div>
             <Textarea rows={2} value={proximoPasso} onChange={e => setProximoPasso(e.target.value)} placeholder="Ex.: Enviar planilha de simulação até sexta-feira" />
           </div>
 

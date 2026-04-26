@@ -58,6 +58,7 @@ export function StatusBadge({ status }: { status: SemaforoStatus; className?: st
       color: c.color,
       border: `1px solid ${c.border}`,
       whiteSpace: "nowrap",
+      boxShadow: "0 1px 2px rgba(15,23,42,0.06)",
     }}>
       {c.icon}
       {c.label}

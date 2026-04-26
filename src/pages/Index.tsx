@@ -4,9 +4,44 @@ import { supabase, type RadarConsultivoRow, type SemaforoStatus } from "@/lib/su
 import { StatusBadge } from "@/components/StatusBadge";
 import { NovoClienteModal } from "@/components/NovoClienteModal";
 
+const TIPO_DISPLAY = [
+  { key: "fiscal",       label: "Fiscal",        color: "#3B82F6" },
+  { key: "trabalhista",  label: "Trabalhista",    color: "#EC4899" },
+  { key: "contabil",     label: "Contábil",       color: "#06B6D4" },
+  { key: "societario",   label: "Societário",     color: "#F97316" },
+  { key: "planejamento", label: "Planejamento",   color: "#22C55E" },
+];
+
+function TipoDonut({ data, total }: { data: [string, number][]; total: number }) {
+  const colorMap: Record<string, string> = Object.fromEntries(TIPO_DISPLAY.map(t => [t.key, t.color]));
+  const r = 60, cx = 80, cy = 80, sw = 20;
+  const circ = 2 * Math.PI * r;
+  const startOffset = circ * 0.25;
+  let acc = 0;
+  const segments = data.map(([key, count]) => {
+    const color = colorMap[key] ?? "#94a3b8";
+    const len = total > 0 ? (count / total) * circ : 0;
+    const dashOffset = startOffset - acc;
+    acc += len;
+    return { key, count, color, len, dashOffset };
+  });
+  return (
+    <svg width="160" height="160" viewBox="0 0 160 160" style={{ flexShrink: 0 }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f0f0f5" strokeWidth={sw} />
+      {segments.map(seg => (
+        <circle key={seg.key} cx={cx} cy={cy} r={r} fill="none" stroke={seg.color} strokeWidth={sw}
+          strokeDasharray={`${seg.len} ${circ}`} strokeDashoffset={seg.dashOffset} strokeLinecap="butt" />
+      ))}
+      <text x={cx} y={cy - 6} textAnchor="middle" fontSize={22} fontWeight="800" fill="#111827">{total}</text>
+      <text x={cx} y={cy + 12} textAnchor="middle" fontSize={10} fill="#9ca3af" fontWeight="500">TOTAL</text>
+    </svg>
+  );
+}
+
 export default function Index() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<RadarConsultivoRow[]>([]);
+  const [interacoes, setInteracoes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [novoOpen, setNovoOpen] = useState(false);
@@ -23,16 +58,20 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
+    let active = true;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase.from("radar_consultivo").select("*");
-      if (!mounted) return;
+      const [{ data, error }, { data: intData }] = await Promise.all([
+        supabase.from("radar_consultivo").select("*"),
+        supabase.from("interacoes").select("*").order("data_interacao", { ascending: false }),
+      ]);
+      if (!active) return;
       if (error) { setError(error.message); setRows([]); }
       else { setRows((data ?? []) as RadarConsultivoRow[]); setError(null); }
+      setInteracoes((intData ?? []) as any[]);
       setLoading(false);
     })();
-    return () => { mounted = false; };
+    return () => { active = false; };
   }, [reloadKey]);
 
   const counts = useMemo(() => {
@@ -59,6 +98,48 @@ export default function Index() {
     rows.reduce((sum, r) => sum + (r.followups_pendentes ?? 0), 0),
     [rows]
   );
+
+  const urgentClients = useMemo(() =>
+    [...rows]
+      .filter(r => (r.dias_sem_orientacao ?? 0) > 0)
+      .sort((a, b) => (b.dias_sem_orientacao ?? 0) - (a.dias_sem_orientacao ?? 0))
+      .slice(0, 3),
+    [rows]
+  );
+
+  const topClients = useMemo(() => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const map: Record<string, { count: number; lastDate: Date | null }> = {};
+    for (const i of interacoes) {
+      const key = String(i.cliente_id ?? "");
+      if (!key) continue;
+      const d = i.data_interacao ? new Date(i.data_interacao) : null;
+      if (!map[key]) map[key] = { count: 0, lastDate: null };
+      if (d && d >= thirtyDaysAgo) map[key].count++;
+      if (d && (!map[key].lastDate || d > map[key].lastDate!)) map[key].lastDate = d;
+    }
+    return Object.entries(map)
+      .filter(([, v]) => v.count > 0)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 4)
+      .map(([id, v]) => {
+        const row = rows.find(r => String(r.cliente_id ?? r.id) === id);
+        const daysAgo = v.lastDate ? Math.floor((Date.now() - v.lastDate.getTime()) / 86_400_000) : null;
+        return { id, count: v.count, row, daysAgo };
+      })
+      .filter(x => x.row != null) as { id: string; count: number; row: RadarConsultivoRow; daysAgo: number | null }[];
+  }, [interacoes, rows]);
+
+  const tipoDistribuicao = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const i of interacoes) {
+      const t = i.tipo ?? "outros";
+      map[t] = (map[t] ?? 0) + 1;
+    }
+    return Object.entries(map)
+      .filter(([k]) => TIPO_DISPLAY.some(td => td.key === k))
+      .sort((a, b) => b[1] - a[1]) as [string, number][];
+  }, [interacoes]);
 
   const segmentos = useMemo(() => {
     const map: Record<string, number> = {};
@@ -557,6 +638,158 @@ export default function Index() {
               <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
               Cadastrar novo cliente
             </button>
+          </div>
+        </div>
+
+        {/* ── Novos blocos: Linha 1 (Atenção urgente + Top clientes) ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "16px", marginTop: "16px", marginBottom: "16px" }}>
+
+          {/* Bloco A — Atenção urgente */}
+          <div className="card-elevated" style={{ overflow: "hidden" }}>
+            <div style={{ height: "3px", background: "linear-gradient(90deg, #EF4444, #F97316)" }} />
+            <div style={{ padding: "16px 18px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "#64748B", textTransform: "uppercase" as const, letterSpacing: ".04em" }}>
+                  🚨 Atenção urgente
+                </span>
+                <button onClick={() => navigate("/clientes")}
+                  style={{ fontSize: "11px", color: "#1d4ed8", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                  Ver todos →
+                </button>
+              </div>
+              {loading ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {[1, 2, 3].map(i => <div key={i} style={{ height: "52px", background: "#f3f4f6", borderRadius: "8px" }} />)}
+                </div>
+              ) : urgentClients.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "20px 0", color: "#9ca3af", fontSize: "12px" }}>Nenhum cliente crítico</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {urgentClients.map(r => {
+                    const id = r.id ?? r.cliente_id;
+                    const dias = r.dias_sem_orientacao ?? 0;
+                    const isRed = dias > 3;
+                    const isYellow = dias >= 2 && dias <= 3;
+                    const avatarBg = isRed ? "#fef2f2" : isYellow ? "#fffbeb" : "#f1f5f9";
+                    const avatarColor = isRed ? "#dc2626" : isYellow ? "#d97706" : "#64748b";
+                    const badgeBg = isRed ? "#fef2f2" : isYellow ? "#fffbeb" : "#f1f5f9";
+                    const badgeColor = isRed ? "#dc2626" : isYellow ? "#d97706" : "#64748b";
+                    const btnStyle: React.CSSProperties = isRed
+                      ? { background: "#1d4ed8", color: "#fff", border: "none" }
+                      : isYellow
+                      ? { background: "#F59E0B", color: "#fff", border: "none" }
+                      : { background: "transparent", color: "#374151", border: "1px solid #e5e7eb" };
+                    return (
+                      <div key={String(id ?? "")} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", borderRadius: "8px", background: "#f9fafb", border: "1px solid #f3f4f6" }}>
+                        <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: avatarColor, flexShrink: 0 }}>
+                          {nameInitials(r.razao_social)}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: "12px", fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.razao_social ?? "—"}</div>
+                          {r.segmento && <div style={{ fontSize: "10px", color: "#9ca3af" }}>{r.segmento}</div>}
+                        </div>
+                        <span style={{ fontSize: "10px", fontWeight: 700, background: badgeBg, color: badgeColor, borderRadius: "12px", padding: "2px 7px", flexShrink: 0 }}>
+                          {dias}d
+                        </span>
+                        <button onClick={() => id != null && navigate(`/radar/${id}`)}
+                          style={{ padding: "4px 10px", fontSize: "10px", fontWeight: 600, borderRadius: "6px", cursor: "pointer", flexShrink: 0, ...btnStyle }}>
+                          {isRed ? "Contatar" : isYellow ? "Acompanhar" : "Ver detalhes"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bloco B — Top clientes */}
+          <div className="card-elevated" style={{ overflow: "hidden" }}>
+            <div style={{ height: "3px", background: "linear-gradient(90deg, #6366F1, #1D4ED8)" }} />
+            <div style={{ padding: "16px 18px" }}>
+              <div style={{ marginBottom: "14px" }}>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "#64748B", textTransform: "uppercase" as const, letterSpacing: ".04em" }}>
+                  🏆 Top clientes
+                </span>
+              </div>
+              {loading ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {[1, 2, 3, 4].map(i => <div key={i} style={{ height: "44px", background: "#f3f4f6", borderRadius: "8px" }} />)}
+                </div>
+              ) : topClients.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "20px 0", color: "#9ca3af", fontSize: "12px" }}>
+                  Nenhuma orientação nos últimos 30 dias
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {topClients.map((tc, idx) => {
+                    const rankColors = ["#F59E0B", "#94A3B8", "#B45309", "#94A3B8"];
+                    const rankColor = rankColors[idx] ?? "#94A3B8";
+                    const maxCount = topClients[0]?.count ?? 1;
+                    const barPct = (tc.count / maxCount) * 100;
+                    const barGrad = idx === 0
+                      ? "linear-gradient(90deg, #F59E0B, #F97316)"
+                      : "linear-gradient(90deg, #6366F1, #1D4ED8)";
+                    const clientId = tc.row.id ?? tc.row.cliente_id;
+                    const meta = [tc.row.segmento, tc.daysAgo !== null ? `última: ${tc.daysAgo}d atrás` : null].filter(Boolean).join(" · ");
+                    return (
+                      <div key={tc.id} onClick={() => clientId != null && navigate(`/radar/${clientId}`)}
+                        style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 800, color: rankColor, width: "18px", flexShrink: 0, textAlign: "center" as const }}>#{idx + 1}</span>
+                        <div style={{ width: "30px", height: "30px", borderRadius: "7px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, color: "#1d4ed8", flexShrink: 0 }}>
+                          {nameInitials(tc.row.razao_social)}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: "11px", fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tc.row.razao_social ?? "—"}</div>
+                          {meta && <div style={{ fontSize: "10px", color: "#9ca3af" }}>{meta}</div>}
+                          <div style={{ height: "3px", background: "#f0f0f5", borderRadius: "2px", marginTop: "4px", overflow: "hidden" }}>
+                            <div style={{ height: "100%", background: barGrad, borderRadius: "2px", width: mounted ? `${barPct}%` : "0%", transition: "width .8s cubic-bezier(.4,0,.2,1)" }} />
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right" as const, flexShrink: 0 }}>
+                          <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827" }}>{tc.count}</div>
+                          <div style={{ fontSize: "9px", color: "#9ca3af" }}>orientações</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Novos blocos: Linha 2 (Distribuição por tipo) ── */}
+        <div className="card-elevated" style={{ overflow: "hidden" }}>
+          <div style={{ height: "3px", background: "linear-gradient(90deg, #06B6D4, #14B8A6)" }} />
+          <div style={{ padding: "20px 24px" }}>
+            <div style={{ marginBottom: "20px" }}>
+              <span style={{ fontSize: "10px", fontWeight: 700, color: "#64748B", textTransform: "uppercase" as const, letterSpacing: ".04em" }}>
+                🎯 Distribuição por tipo de orientação
+              </span>
+            </div>
+            {loading ? (
+              <div style={{ height: "160px", background: "#f3f4f6", borderRadius: "8px" }} />
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: "40px" }}>
+                <TipoDonut data={tipoDistribuicao} total={tipoDistribuicao.reduce((s, [, n]) => s + n, 0)} />
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {TIPO_DISPLAY.map(tc => {
+                    const count = tipoDistribuicao.find(([k]) => k === tc.key)?.[1] ?? 0;
+                    const totalTipos = tipoDistribuicao.reduce((s, [, n]) => s + n, 0);
+                    const pct = totalTipos > 0 ? Math.round((count / totalTipos) * 100) : 0;
+                    return (
+                      <div key={tc.key} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: tc.color, flexShrink: 0 }} />
+                        <span style={{ fontSize: "12px", color: "#374151", flex: 1 }}>{tc.label}</span>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{count}</span>
+                        <span style={{ fontSize: "10px", color: "#fff", background: tc.color, padding: "1px 7px", borderRadius: "10px", minWidth: "32px", textAlign: "center" as const }}>{pct}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

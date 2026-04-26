@@ -350,14 +350,14 @@ export default function Clientes() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
             <button onClick={() => setImportOpen(true)}
-              style={{ display: "flex", alignItems: "center", gap: "7px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: "7px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--shadow-card)" }}
               onMouseEnter={e => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#9ca3af"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#d1d5db"; }}>
               <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Importar clientes
             </button>
             <button onClick={() => setNovoOpen(true)}
-              style={{ display: "flex", alignItems: "center", gap: "7px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: "7px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer", boxShadow: "var(--shadow-button-primary)" }}
               onMouseEnter={e => e.currentTarget.style.background = "#1e40af"}
               onMouseLeave={e => e.currentTarget.style.background = "#1d4ed8"}>
               <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -367,7 +367,7 @@ export default function Clientes() {
         </div>
 
         {/* Filter bar */}
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "16px 20px", marginBottom: "16px" }}>
+        <div className="card-elevated" style={{ padding: "16px 20px", marginBottom: "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
 
             {/* Search */}
@@ -435,7 +435,7 @@ export default function Clientes() {
         </div>
 
         {/* Table card */}
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+        <div className="card-elevated" style={{ overflow: "hidden" }}>
 
           {/* Table toolbar */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid #f3f4f6", background: "#fafafa" }}>
@@ -506,7 +506,7 @@ export default function Clientes() {
 
                   {/* Name */}
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-                    <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: "#1d4ed8", flexShrink: 0 }}>
+                    <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: "#1d4ed8", flexShrink: 0, boxShadow: "0 1px 2px rgba(15,23,42,0.06)" }}>
                       {nameInitials(r.razao_social)}
                     </div>
                     <div style={{ minWidth: 0 }}>
@@ -537,7 +537,7 @@ export default function Clientes() {
 
                   {/* Dias */}
                   <div>
-                    <span style={{ display: "inline-flex", alignItems: "baseline", gap: "3px", background: diasBg(dias), borderRadius: "6px", padding: "4px 9px" }}>
+                    <span style={{ display: "inline-flex", alignItems: "baseline", gap: "3px", background: diasBg(dias), borderRadius: "6px", padding: "4px 9px", boxShadow: "0 1px 2px rgba(15,23,42,0.06)" }}>
                       <span style={{ fontSize: "15px", fontWeight: 700, color: diasColor(dias), lineHeight: 1 }}>{dias}</span>
                       <span style={{ fontSize: "10px", color: diasColor(dias), opacity: .7 }}>dias</span>
                     </span>
@@ -552,9 +552,9 @@ export default function Clientes() {
                       title="Excluir cliente"
                       aria-label="Excluir cliente"
                       onClick={e => { e.stopPropagation(); setDeleteTarget(r); }}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "30px", height: "30px", border: "1px solid #fecaca", borderRadius: "7px", background: "#fff", color: "#dc2626", cursor: "pointer", transition: "background .12s, border-color .12s", flexShrink: 0 }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.borderColor = "#f87171"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#fecaca"; }}>
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "30px", height: "30px", border: "1px solid #e2e8f0", borderRadius: "7px", background: "#fff", color: "#94A3B8", cursor: "pointer", transition: "background .12s, border-color .12s, color .12s", flexShrink: 0 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "#FEF2F2"; e.currentTarget.style.borderColor = "#FCA5A5"; e.currentTarget.style.color = "#EF4444"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#94A3B8"; }}>
                       <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
                       </svg>

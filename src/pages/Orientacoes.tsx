@@ -295,7 +295,7 @@ export default function Orientacoes() {
             </p>
           </div>
           <button onClick={() => setNovaOpen(true)}
-            style={{ display: "flex", alignItems: "center", gap: "7px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+            style={{ display: "flex", alignItems: "center", gap: "7px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: 600, cursor: "pointer", flexShrink: 0, boxShadow: "var(--shadow-button-primary)" }}
             onMouseEnter={e => e.currentTarget.style.background = "#1e40af"}
             onMouseLeave={e => e.currentTarget.style.background = "#1d4ed8"}>
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -310,40 +310,47 @@ export default function Orientacoes() {
               label: "Orientações no mês",
               value: metrics.noMes,
               sub: "registradas em " + new Date().toLocaleString("pt-BR", { month: "long" }),
-              accent: "#1d4ed8", border: "#1d4ed8",
+              accent: "#1d4ed8",
+              gradient: "linear-gradient(90deg, #1D4ED8, #6366F1)",
               icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
             },
             {
               label: "Esta semana",
               value: metrics.naSemana,
               sub: "orientações nos últimos 7 dias",
-              accent: "#7c3aed", border: "#7c3aed",
+              accent: "#7c3aed",
+              gradient: "linear-gradient(90deg, #6366F1, #A855F7)",
               icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
             },
             {
               label: "Média por cliente",
               value: metrics.mediaPorCliente,
               sub: "orientações/cliente no mês",
-              accent: "#0891b2", border: "#0891b2",
+              accent: "#0891b2",
+              gradient: "linear-gradient(90deg, #06B6D4, #14B8A6)",
               icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
             },
             {
               label: "Sem orientação +30d",
               value: metrics.semOrientacao30,
               sub: "clientes precisam de contato",
-              accent: "#dc2626", border: "#dc2626",
+              accent: "#dc2626",
+              gradient: "linear-gradient(90deg, #EF4444, #F97316)",
               icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
             },
           ].map(m => (
-            <div key={m.label} style={{ background: "#fff", border: "1px solid #e5e7eb", borderTop: `3px solid ${m.border}`, borderRadius: "10px", padding: "18px 20px" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".07em", marginBottom: "8px" }}>{m.label}</div>
-                  <div style={{ fontSize: "32px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{loading ? "—" : m.value}</div>
-                  <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "5px" }}>{m.sub}</div>
-                </div>
-                <div style={{ width: "38px", height: "38px", borderRadius: "9px", background: `${m.accent}18`, display: "flex", alignItems: "center", justifyContent: "center", color: m.accent, flexShrink: 0 }}>
-                  {m.icon}
+            <div key={m.label} className="card-elevated" style={{ overflow: "hidden" }}>
+              <div style={{ height: "3px", background: m.gradient }} />
+              <div style={{ padding: "18px 20px" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".07em", marginBottom: "8px" }}>{m.label}</div>
+                    <div style={{ fontSize: "32px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{loading ? "—" : m.value}</div>
+                    <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "5px" }}>{m.sub}</div>
+                  </div>
+                  <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: `${m.accent}18`, display: "flex", alignItems: "center", justifyContent: "center", color: m.accent, flexShrink: 0 }}>
+                    {m.icon}
+                  </div>
                 </div>
               </div>
             </div>
@@ -351,7 +358,7 @@ export default function Orientacoes() {
         </div>
 
         {/* ── Filters + view toggle ── */}
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px" }}>
+        <div className="card-elevated" style={{ padding: "14px 18px", marginBottom: "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
 
             {/* Period tabs */}
@@ -514,7 +521,7 @@ function OrientacaoCard({ item, navigate }: { item: InteracaoEnriquecida; naviga
               </div>
             )}
             {(item as any).proximo_passo && (
-              <div style={{ marginTop: "6px", display: "flex", alignItems: "flex-start", gap: "5px", fontSize: "11px", color: "#d97706", background: "#fffbeb", padding: "4px 8px", borderRadius: "6px", border: "1px solid #fde68a" }}>
+              <div style={{ marginTop: "6px", display: "flex", alignItems: "flex-start", gap: "5px", fontSize: "11px", color: "#d97706", background: "#fffbeb", padding: "4px 8px", borderRadius: "6px", border: "1px solid #fde68a", boxShadow: "0 1px 2px rgba(249, 115, 22, 0.08)" }}>
                 <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: "1px" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 <span>{(item as any).proximo_passo}</span>
               </div>
@@ -533,7 +540,7 @@ function TimelineByDate({ groups, navigate }: { groups: [string, InteracaoEnriqu
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {groups.map(([dateKey, items]) => (
-        <div key={dateKey} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+        <div key={dateKey} className="card-elevated" style={{ overflow: "hidden" }}>
           {/* Date header */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 18px", background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
             <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#1d4ed8", flexShrink: 0 }} />
@@ -572,7 +579,7 @@ function TimelineByCliente({ groups, navigate }: { groups: [string, { nome: stri
       {groups.map(([key, group]) => {
         const isOpen = expanded.has(key);
         return (
-          <div key={key} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
+          <div key={key} className="card-elevated" style={{ overflow: "hidden" }}>
             {/* Client header */}
             <button onClick={() => toggle(key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "12px", padding: "12px 18px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
               onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
@@ -645,7 +652,7 @@ function SkeletonTimeline() {
 
 function EmptyState({ onNew }: { onNew: () => void }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "64px 32px", textAlign: "center" }}>
+    <div className="card-elevated" style={{ padding: "64px 32px", textAlign: "center" }}>
       <div style={{ width: "52px", height: "52px", background: "#eff6ff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: "#1d4ed8" }}>
         <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       </div>
