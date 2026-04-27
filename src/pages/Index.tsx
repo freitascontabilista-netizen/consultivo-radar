@@ -229,15 +229,6 @@ export default function Index() {
   const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
   const dataFormatada = now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-  // Donut chart
-  const r = 54;
-  const circ = 2 * Math.PI * r;
-  const total = counts.total || 1;
-  const verdeLen = (counts.verde / total) * circ;
-  const atencaoLen = (counts.atencao / total) * circ;
-  const criticoLen = (counts.critico / total) * circ;
-  const startOffset = circ * 0.25;
-
   const navItems = [
     { label: "Dashboard", path: "/", active: true },
     { label: "Clientes", path: "/clientes", active: false },
@@ -325,6 +316,10 @@ export default function Index() {
         @keyframes fade-up {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 640px) {
+          .radial-grid { grid-template-columns: 1fr !important; }
+          .health-banner { flex-direction: column !important; gap: 10px !important; align-items: stretch !important; }
         }
       `}</style>
 
@@ -428,87 +423,140 @@ export default function Index() {
         {/* Middle row: donut + bloco fundido de atenção */}
         <div style={S.grid3}>
 
-          {/* Health donut */}
-          <div style={{ ...S.card, ...S.cardPad }}>
-            <div style={S.cardTitle}>
-              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-              Saúde da Carteira
+          {/* ─── Saúde da carteira — 3 mini-radiais ─── */}
+          <div className="card-elevated" style={{ overflow: "hidden" }}>
+            <div style={{ height: "3px", background: "linear-gradient(90deg, #10B981, #14B8A6)" }} />
+
+            {/* Header */}
+            <div style={{ padding: "14px 18px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "11px", fontWeight: 600, color: "#64748B", textTransform: "uppercase" as const, letterSpacing: "0.04em" }}>
+                💚 Saúde da carteira
+              </span>
+              <span style={{ fontSize: "11px", color: "#64748B", background: "#F1F5F9", padding: "3px 9px", borderRadius: "999px", fontWeight: 500 }}>
+                {loading ? "—" : counts.total} clientes ativos
+              </span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "32px" }}>
-              <div style={{ flexShrink: 0, position: "relative" }}>
-                <svg width="170" height="170" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r={r} fill="none" stroke="#f0f0f5" strokeWidth="14"/>
-                  {counts.verde > 0 && (
-                    <circle cx="60" cy="60" r={r} fill="none" stroke="url(#grad-verde)" strokeWidth="14"
-                      strokeDasharray={`${mounted ? verdeLen : 0} ${circ}`}
-                      strokeDashoffset={startOffset}
-                      strokeLinecap="butt" style={{ transition: "stroke-dasharray .8s cubic-bezier(.4,0,.2,1)" }}/>
-                  )}
-                  {counts.atencao > 0 && (
-                    <circle cx="60" cy="60" r={r} fill="none" stroke="url(#grad-atencao)" strokeWidth="14"
-                      strokeDasharray={`${mounted ? atencaoLen : 0} ${circ}`}
-                      strokeDashoffset={startOffset - verdeLen}
-                      strokeLinecap="butt" style={{ transition: "stroke-dasharray .8s cubic-bezier(.4,0,.2,1) .1s" }}/>
-                  )}
-                  {counts.critico > 0 && (
-                    <circle cx="60" cy="60" r={r} fill="none" stroke="url(#grad-critico)" strokeWidth="14"
-                      strokeDasharray={`${mounted ? criticoLen : 0} ${circ}`}
-                      strokeDashoffset={startOffset - verdeLen - atencaoLen}
-                      strokeLinecap="butt" style={{ transition: "stroke-dasharray .8s cubic-bezier(.4,0,.2,1) .2s" }}/>
-                  )}
-                  <defs>
-                    <linearGradient id="grad-verde" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#16a34a"/>
-                      <stop offset="100%" stopColor="#4ade80"/>
-                    </linearGradient>
-                    <linearGradient id="grad-atencao" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#d97706"/>
-                      <stop offset="100%" stopColor="#fbbf24"/>
-                    </linearGradient>
-                    <linearGradient id="grad-critico" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#dc2626"/>
-                      <stop offset="100%" stopColor="#f87171"/>
-                    </linearGradient>
-                  </defs>
-                  <text x="60" y="55" textAnchor="middle" fontSize="22" fontWeight="800" fill="#111827">{loading ? "—" : counts.total}</text>
-                  <text x="60" y="70" textAnchor="middle" fontSize="9" fill="#9ca3af" fontWeight="500">CLIENTES</text>
-                </svg>
-              </div>
 
-              {/* Legend */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
+            {/* Body */}
+            <div style={{ padding: "16px 18px 18px" }}>
+
+              {/* Grid 3 mini-radiais */}
+              <div className="radial-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" }}>
                 {[
-                  { label: "Em dia", value: counts.verde, color: "#16a34a", gradBar: "linear-gradient(90deg,#16a34a,#4ade80)", bg: "#f0fdf4" },
-                  { label: "Em atenção", value: counts.atencao, color: "#d97706", gradBar: "linear-gradient(90deg,#d97706,#fbbf24)", bg: "#fffbeb" },
-                  { label: "Críticos", value: counts.critico, color: "#dc2626", gradBar: "linear-gradient(90deg,#dc2626,#f87171)", bg: "#fef2f2" },
-                ].map(item => (
-                  <div key={item.label}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "5px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                        <div style={{ width: "9px", height: "9px", borderRadius: "50%", background: item.color }} />
-                        <span style={{ fontSize: "12px", color: "#374151" }}>{item.label}</span>
-                      </div>
-                      <span style={{ fontSize: "12px", fontWeight: 700, color: item.color }}>{loading ? "—" : item.value}</span>
-                    </div>
-                    <div style={{ height: "5px", background: "#f0f0f5", borderRadius: "3px", overflow: "hidden" }}>
-                      <div style={{
-                        height: "100%",
-                        background: item.gradBar,
-                        borderRadius: "3px",
-                        width: loading || counts.total === 0 ? "0%" : `${(item.value / counts.total) * 100}%`,
-                        transition: "width .8s cubic-bezier(.4,0,.2,1)",
-                      }} />
-                    </div>
-                  </div>
-                ))}
+                  {
+                    label: "Em dia",
+                    value: counts.verde,
+                    color: "#10B981",
+                    numColor: (!loading && counts.verde > 0) ? "#059669" : "#94A3B8",
+                    pct: counts.total > 0 ? counts.verde / counts.total : 0,
+                    footer: counts.total === 0 ? "nenhum cliente cadastrado" : `de ${counts.total} clientes`,
+                  },
+                  {
+                    label: "Em atenção",
+                    value: counts.atencao,
+                    color: "#F59E0B",
+                    numColor: (!loading && counts.atencao > 0) ? "#D97706" : "#94A3B8",
+                    pct: counts.total > 0 ? counts.atencao / counts.total : 0,
+                    footer: counts.atencao > 0 ? `${counts.atencao} no momento` : "nenhum no momento",
+                  },
+                  {
+                    label: "Críticos",
+                    value: counts.critico,
+                    color: "#EF4444",
+                    numColor: (!loading && counts.critico > 0) ? "#DC2626" : "#94A3B8",
+                    pct: counts.total > 0 ? counts.critico / counts.total : 0,
+                    footer: counts.critico > 0
+                      ? `requer${counts.critico === 1 ? "" : "em"} contato`
+                      : "nenhum no momento",
+                  },
+                ].map(card => {
+                  const CIRC = 263.9;
+                  const offset = !mounted || loading ? CIRC : Math.max(0, CIRC * (1 - card.pct));
+                  const pctLabel = counts.total > 0 ? `${Math.round(card.pct * 100)}%` : "0%";
+                  return (
+                    <div key={card.label}
+                      style={{ background: "#FAFBFC", border: "0.5px solid rgba(15,23,42,0.04)", borderRadius: "12px", padding: "18px 14px", display: "flex", flexDirection: "column" as const, alignItems: "center", gap: "12px", transition: "all 0.2s" }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(15,23,42,0.08)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
 
-                <div style={{ marginTop: "6px", padding: "11px 14px", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", borderRadius: "10px", border: "1px solid #bbf7d0" }}>
-                  <div style={{ fontSize: "11px", color: "#6b7280", marginBottom: "2px" }}>Taxa de saúde</div>
-                  <div style={{ fontSize: "20px", fontWeight: 800, color: "#16a34a" }}>
-                    {loading || counts.total === 0 ? "—" : `${Math.round((counts.verde / counts.total) * 100)}%`}
-                  </div>
-                </div>
+                      {/* Label com bolinha */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", fontWeight: 600, color: "#475569", letterSpacing: "0.04em", textTransform: "uppercase" as const }}>
+                        <span style={{ display: "inline-block", width: "7px", height: "7px", borderRadius: "50%", background: card.color, flexShrink: 0 }} />
+                        {card.label}
+                      </div>
+
+                      {/* Anel radial + texto central */}
+                      <div style={{ position: "relative" as const, width: "100px", height: "100px", flexShrink: 0 }}>
+                        <svg width="100" height="100" viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r="42" fill="none" stroke="#F1F5F9" strokeWidth="8" />
+                          <circle
+                            cx="50" cy="50" r="42"
+                            fill="none"
+                            stroke={card.color}
+                            strokeWidth="8"
+                            strokeLinecap="round"
+                            transform="rotate(-90 50 50)"
+                            strokeDasharray={CIRC}
+                            strokeDashoffset={offset}
+                            style={{ transition: "stroke-dashoffset .8s cubic-bezier(.4,0,.2,1)" }}
+                          />
+                        </svg>
+                        <div style={{ position: "absolute" as const, top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" as const, lineHeight: 1, pointerEvents: "none" }}>
+                          <div style={{ fontSize: "26px", fontWeight: 700, color: card.numColor, lineHeight: 1 }}>
+                            {loading ? "—" : card.value}
+                          </div>
+                          <div style={{ fontSize: "10px", color: "#94A3B8", marginTop: "3px" }}>
+                            {loading ? "" : pctLabel}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <div style={{ fontSize: "11px", color: "#94A3B8", fontWeight: 500, textAlign: "center" as const }}>
+                        {loading ? "carregando…" : card.footer}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* Banner Health Score */}
+              {(() => {
+                const hs = counts.total > 0 ? Math.round((counts.verde / counts.total) * 100) : -1;
+                const isNeutral = counts.total === 0;
+                const isGreen = hs >= 70;
+                const isYellow = hs >= 40 && hs < 70;
+
+                const bannerBg = isNeutral ? "#F1F5F9" : isGreen ? "linear-gradient(135deg, #ECFDF5, #D1FAE5)" : isYellow ? "linear-gradient(135deg, #FFFBEB, #FEF3C7)" : "linear-gradient(135deg, #FEF2F2, #FECACA)";
+                const bannerBorder = isNeutral ? "#E2E8F0" : isGreen ? "#A7F3D0" : isYellow ? "#FCD34D" : "#FCA5A5";
+                const strongColor = isNeutral ? "#64748B" : isGreen ? "#047857" : isYellow ? "#B45309" : "#B91C1C";
+                const subColor = isNeutral ? "#94A3B8" : isGreen ? "#059669" : isYellow ? "#D97706" : "#DC2626";
+                const iconColor = isNeutral ? "#94A3B8" : isGreen ? "#10B981" : isYellow ? "#F59E0B" : "#EF4444";
+                const sub = isNeutral ? "Sem dados ainda · cadastre clientes" : isGreen ? "Carteira saudável · continue assim" : isYellow ? "Atenção: alguns clientes precisam de contato" : "Carteira em situação crítica · ação recomendada";
+
+                return (
+                  <div className="health-banner" style={{ marginTop: "16px", background: bannerBg, border: `0.5px solid ${bannerBorder}`, borderRadius: "11px", padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ width: "38px", height: "38px", background: "#fff", borderRadius: "10px", boxShadow: "0 1px 4px rgba(15,23,42,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="18" height="18" fill="none" stroke={iconColor} strokeWidth="2.2" viewBox="0 0 24 24">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                          <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: strongColor, lineHeight: 1.2 }}>Health Score geral</div>
+                        <div style={{ fontSize: "11px", color: subColor, marginTop: "3px" }}>{loading ? "carregando…" : sub}</div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" as const, flexShrink: 0 }}>
+                      <span style={{ fontSize: "24px", fontWeight: 700, color: strongColor }}>
+                        {loading ? "—" : isNeutral ? "—" : hs}
+                      </span>
+                      {!isNeutral && !loading && <span style={{ fontSize: "13px", fontWeight: 500, color: subColor }}>%</span>}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
