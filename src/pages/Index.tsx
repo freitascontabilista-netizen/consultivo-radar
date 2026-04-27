@@ -73,6 +73,7 @@ export default function Index() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [displayCounts, setDisplayCounts] = useState({ total: 0, critico: 0, atencao: 0, followups: 0 });
+  const [atencaoFilter, setAtencaoFilter] = useState<"todos" | "critico" | "atencao" | "monitorar">("todos");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -107,27 +108,37 @@ export default function Index() {
     return c;
   }, [rows]);
 
-  const criticalClients = useMemo(() =>
-    rows.filter(r => r.semaforo === "critico").sort((a, b) => (b.dias_sem_orientacao ?? 0) - (a.dias_sem_orientacao ?? 0)).slice(0, 5),
-    [rows]
-  );
-
-  const atencaoClients = useMemo(() =>
-    rows.filter(r => r.semaforo === "atencao").sort((a, b) => (b.dias_sem_orientacao ?? 0) - (a.dias_sem_orientacao ?? 0)).slice(0, 4),
-    [rows]
-  );
-
   const totalFollowups = useMemo(() =>
     rows.reduce((sum, r) => sum + (r.followups_pendentes ?? 0), 0),
     [rows]
   );
 
-  const urgentClients = useMemo(() =>
-    [...rows]
-      .filter(r => (r.dias_sem_orientacao ?? 0) > 0)
-      .sort((a, b) => (b.dias_sem_orientacao ?? 0) - (a.dias_sem_orientacao ?? 0))
-      .slice(0, 3),
-    [rows]
+  const atencaoList = useMemo(() => {
+    const result: Array<{ row: RadarConsultivoRow; severity: "critico" | "atencao" | "monitorar" }> = [];
+    for (const r of rows) {
+      const dias = r.dias_sem_orientacao ?? 0;
+      if (dias === 0) continue;
+      let severity: "critico" | "atencao" | "monitorar";
+      if (r.semaforo === "critico" || dias >= 5) {
+        severity = "critico";
+      } else if (dias >= 2 && dias <= 4) {
+        severity = "atencao";
+      } else {
+        severity = "monitorar";
+      }
+      result.push({ row: r, severity });
+    }
+    const order = { critico: 0, atencao: 1, monitorar: 2 };
+    result.sort((a, b) => {
+      if (order[a.severity] !== order[b.severity]) return order[a.severity] - order[b.severity];
+      return (b.row.dias_sem_orientacao ?? 0) - (a.row.dias_sem_orientacao ?? 0);
+    });
+    return result;
+  }, [rows]);
+
+  const filteredAtencao = useMemo(() =>
+    atencaoFilter === "todos" ? atencaoList : atencaoList.filter(x => x.severity === atencaoFilter),
+    [atencaoList, atencaoFilter]
   );
 
   const topClients = useMemo(() => {
@@ -162,6 +173,16 @@ export default function Index() {
     return Object.entries(map)
       .filter(([k]) => TIPO_DISPLAY.some(td => td.key === k))
       .sort((a, b) => b[1] - a[1]) as [string, number][];
+  }, [interacoes]);
+
+  const lastTipoByClientId = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const i of interacoes) {
+      const key = String(i.cliente_id ?? "");
+      if (!key || map[key]) continue;
+      if (i.tipo) map[key] = i.tipo;
+    }
+    return map;
   }, [interacoes]);
 
   const segmentos = useMemo(() => {
@@ -238,7 +259,7 @@ export default function Index() {
     greetSub: { fontSize: "13px", color: "#6b7280", marginTop: "3px" },
     grid4: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "16px", marginBottom: "22px" },
     grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "20px" },
-    grid3: { display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "16px", marginBottom: "16px" },
+    grid3: { display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: "16px", marginBottom: "16px" },
     card: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,.05)" },
     cardPad: { padding: "20px" },
     cardTitle: { fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase" as const, letterSpacing: ".08em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "6px" },
@@ -404,7 +425,7 @@ export default function Index() {
           />
         </div>
 
-        {/* Middle row: donut + critical alerts */}
+        {/* Middle row: donut + bloco fundido de atenção */}
         <div style={S.grid3}>
 
           {/* Health donut */}
@@ -414,33 +435,27 @@ export default function Index() {
               Saúde da Carteira
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "32px" }}>
-              {/* SVG Donut — displayed larger via width/height, same viewBox math */}
               <div style={{ flexShrink: 0, position: "relative" }}>
                 <svg width="170" height="170" viewBox="0 0 120 120">
-                  {/* Track */}
                   <circle cx="60" cy="60" r={r} fill="none" stroke="#f0f0f5" strokeWidth="14"/>
-                  {/* Verde */}
                   {counts.verde > 0 && (
                     <circle cx="60" cy="60" r={r} fill="none" stroke="url(#grad-verde)" strokeWidth="14"
                       strokeDasharray={`${mounted ? verdeLen : 0} ${circ}`}
                       strokeDashoffset={startOffset}
                       strokeLinecap="butt" style={{ transition: "stroke-dasharray .8s cubic-bezier(.4,0,.2,1)" }}/>
                   )}
-                  {/* Atencao */}
                   {counts.atencao > 0 && (
                     <circle cx="60" cy="60" r={r} fill="none" stroke="url(#grad-atencao)" strokeWidth="14"
                       strokeDasharray={`${mounted ? atencaoLen : 0} ${circ}`}
                       strokeDashoffset={startOffset - verdeLen}
                       strokeLinecap="butt" style={{ transition: "stroke-dasharray .8s cubic-bezier(.4,0,.2,1) .1s" }}/>
                   )}
-                  {/* Critico */}
                   {counts.critico > 0 && (
                     <circle cx="60" cy="60" r={r} fill="none" stroke="url(#grad-critico)" strokeWidth="14"
                       strokeDasharray={`${mounted ? criticoLen : 0} ${circ}`}
                       strokeDashoffset={startOffset - verdeLen - atencaoLen}
                       strokeLinecap="butt" style={{ transition: "stroke-dasharray .8s cubic-bezier(.4,0,.2,1) .2s" }}/>
                   )}
-                  {/* Gradient defs */}
                   <defs>
                     <linearGradient id="grad-verde" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="#16a34a"/>
@@ -455,7 +470,6 @@ export default function Index() {
                       <stop offset="100%" stopColor="#f87171"/>
                     </linearGradient>
                   </defs>
-                  {/* Center label */}
                   <text x="60" y="55" textAnchor="middle" fontSize="22" fontWeight="800" fill="#111827">{loading ? "—" : counts.total}</text>
                   <text x="60" y="70" textAnchor="middle" fontSize="9" fill="#9ca3af" fontWeight="500">CLIENTES</text>
                 </svg>
@@ -498,80 +512,138 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Clients needing attention */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* ─── Clientes que precisam de atenção (bloco fundido) ─── */}
+          <div className="card-elevated" style={{ overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{ height: "3px", background: "linear-gradient(90deg, #EF4444, #F97316)" }} />
 
-            {/* Critical — pulsating border */}
-            <div style={{
-              ...S.card,
-              flex: 1,
-              border: "1px solid #fca5a5",
-              animation: counts.critico > 0 ? "pulse-red 2.5s ease-in-out infinite" : "none",
-            }}>
-              <div style={{ padding: "14px 16px", borderBottom: "1px solid #fef2f2", background: "linear-gradient(135deg,#fff8f8,#fef2f2)", borderRadius: "11px 11px 0 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ ...S.cardTitle, marginBottom: 0, color: "#dc2626" }}>
-                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  Contato urgente
-                </div>
-                <span style={{ fontSize: "10px", fontWeight: 700, background: "linear-gradient(135deg,#dc2626,#b91c1c)", color: "#fff", borderRadius: "10px", padding: "2px 8px", boxShadow: "0 2px 6px rgba(220,38,38,.35)" }}>{counts.critico}</span>
+            {/* Header */}
+            <div style={{ padding: "14px 18px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>⚠️ Clientes que precisam de atenção</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, background: "#EF4444", color: "#fff", borderRadius: "10px", padding: "2px 7px" }}>
+                  {atencaoList.length}
+                </span>
               </div>
-              {loading ? (
-                <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {[1,2,3].map(i => <div key={i} style={{ height: "32px", background: "#f3f4f6", borderRadius: "6px" }} />)}
-                </div>
-              ) : criticalClients.length === 0 ? (
-                <div style={{ padding: "20px 16px", textAlign: "center", color: "#9ca3af", fontSize: "12px" }}>Nenhum cliente crítico</div>
-              ) : (
-                <div>
-                  {criticalClients.map((r, i) => {
-                    const id = r.id ?? r.cliente_id;
-                    return (
-                      <div key={String(id ?? i)} onClick={() => id != null && navigate(`/radar/${id}`)}
-                        style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", borderBottom: i < criticalClients.length - 1 ? "1px solid #fef2f2" : "none", cursor: "pointer", transition: "background .15s ease" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#fff1f1"}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "linear-gradient(135deg,#fef2f2,#fee2e2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#dc2626", flexShrink: 0, border: "1px solid #fca5a5" }}>
-                          {nameInitials(r.razao_social)}
-                        </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: "12px", fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.razao_social ?? "—"}</div>
-                          {r.segmento && <div style={{ fontSize: "10px", color: "#9ca3af" }}>{r.segmento}</div>}
-                        </div>
-                        <div style={{ fontSize: "11px", fontWeight: 700, color: "#dc2626", whiteSpace: "nowrap", flexShrink: 0, background: "#fef2f2", borderRadius: "6px", padding: "2px 6px" }}>{r.dias_sem_orientacao}d</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <button onClick={() => navigate("/clientes")}
+                style={{ fontSize: "11px", color: "#1D4ED8", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                Ver todos →
+              </button>
             </div>
 
-            {/* Attention */}
-            {atencaoClients.length > 0 && (
-              <div style={{ ...S.card }}>
-                <div style={{ padding: "12px 16px", borderBottom: "1px solid #fffbeb", background: "linear-gradient(135deg,#fffdf0,#fef3c7)", borderRadius: "11px 11px 0 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ ...S.cardTitle, marginBottom: 0, color: "#d97706" }}>
-                    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    Em atenção
-                  </div>
-                  <span style={{ fontSize: "10px", fontWeight: 700, background: "linear-gradient(135deg,#d97706,#b45309)", color: "#fff", borderRadius: "10px", padding: "2px 8px", boxShadow: "0 2px 6px rgba(217,119,6,.3)" }}>{counts.atencao}</span>
+            {/* Filter bar */}
+            <div style={{ padding: "10px 18px", background: "#FAFBFC", borderBottom: "1px solid #E2E8F0", display: "flex", gap: "6px", flexWrap: "wrap" as const, marginTop: "10px" }}>
+              {[
+                { key: "todos" as const, label: "Todos", count: atencaoList.length },
+                { key: "critico" as const, label: "🔴 Críticos", count: atencaoList.filter(x => x.severity === "critico").length },
+                { key: "atencao" as const, label: "🟡 Em atenção", count: atencaoList.filter(x => x.severity === "atencao").length },
+                { key: "monitorar" as const, label: "⚪ Monitorar", count: atencaoList.filter(x => x.severity === "monitorar").length },
+              ].map(f => (
+                <button key={f.key} onClick={() => setAtencaoFilter(f.key)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "5px",
+                    padding: "4px 10px", fontSize: "11px", fontWeight: 500,
+                    borderRadius: "6px", cursor: "pointer",
+                    background: atencaoFilter === f.key ? "#1D4ED8" : "#fff",
+                    color: atencaoFilter === f.key ? "#fff" : "#64748B",
+                    border: atencaoFilter === f.key ? "1px solid #1D4ED8" : "0.5px solid #E2E8F0",
+                    transition: "all .15s ease",
+                  }}>
+                  {f.label}
+                  <span style={{
+                    fontSize: "10px", fontWeight: 700,
+                    background: atencaoFilter === f.key ? "rgba(255,255,255,0.25)" : "#F1F5F9",
+                    color: atencaoFilter === f.key ? "#fff" : "#475569",
+                    borderRadius: "10px", padding: "0 5px",
+                    minWidth: "18px", textAlign: "center" as const,
+                  }}>
+                    {f.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Client list */}
+            <div style={{ flex: 1, overflowY: "auto" as const }}>
+              {loading ? (
+                <div style={{ padding: "8px 18px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {[1, 2, 3].map(i => <div key={i} style={{ height: "56px", background: "#f3f4f6", borderRadius: "8px" }} />)}
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", padding: "12px 16px" }}>
-                  {atencaoClients.map((r, i) => {
-                    const id = r.id ?? r.cliente_id;
-                    return (
-                      <div key={String(id ?? i)} onClick={() => id != null && navigate(`/radar/${id}`)}
-                        title={r.razao_social ?? ""}
-                        style={{ display: "flex", alignItems: "center", gap: "5px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "6px", padding: "4px 8px", cursor: "pointer", fontSize: "11px", fontWeight: 500, color: "#92400e", transition: "all .15s ease" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "#fef3c7"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "#fffbeb"; e.currentTarget.style.transform = "translateY(0)"; }}>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>{r.razao_social ?? "—"}</span>
-                        <span style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff", borderRadius: "4px", padding: "1px 4px", fontSize: "10px", fontWeight: 700, flexShrink: 0 }}>{r.dias_sem_orientacao}d</span>
+              ) : atencaoList.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "32px 20px", color: "#9ca3af", fontSize: "13px" }}>
+                  🎉 Tudo em dia! Nenhum cliente precisa de atenção no momento.
+                </div>
+              ) : filteredAtencao.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "20px", color: "#9ca3af", fontSize: "12px" }}>
+                  Nenhum cliente nesta categoria.
+                </div>
+              ) : (
+                filteredAtencao.map(({ row: rw, severity }, i) => {
+                  const id = rw.id ?? rw.cliente_id;
+                  const dias = rw.dias_sem_orientacao ?? 0;
+                  const lastTipo = lastTipoByClientId[String(rw.cliente_id ?? rw.id ?? "")];
+                  const avatarBg = severity === "critico" ? "#FEF2F2" : severity === "atencao" ? "#FEF3C7" : "#F1F5F9";
+                  const avatarColor = severity === "critico" ? "#DC2626" : severity === "atencao" ? "#B45309" : "#475569";
+                  const dotColor = severity === "critico" ? "#EF4444" : severity === "atencao" ? "#F59E0B" : "#94A3B8";
+                  const pillBg = severity === "critico" ? "#FEF2F2" : severity === "atencao" ? "#FEF3C7" : "#F1F5F9";
+                  const pillColor = severity === "critico" ? "#DC2626" : severity === "atencao" ? "#B45309" : "#475569";
+                  const severityLabel = severity === "critico" ? "CRÍTICO" : severity === "atencao" ? "EM ATENÇÃO" : "MONITORAR";
+                  return (
+                    <div key={String(id ?? i)}
+                      style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 18px", borderBottom: i < filteredAtencao.length - 1 ? "1px solid #F8FAFC" : "none" }}>
+
+                      {/* Avatar com bolinha de severidade */}
+                      <div style={{ position: "relative", flexShrink: 0 }}>
+                        <div style={{ width: "38px", height: "38px", borderRadius: "50%", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: avatarColor }}>
+                          {nameInitials(rw.razao_social)}
+                        </div>
+                        <div style={{ position: "absolute", bottom: 0, right: 0, width: "10px", height: "10px", borderRadius: "50%", background: dotColor, border: "2px solid #fff" }} />
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+
+                      {/* Nome + meta */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px", flexWrap: "wrap" as const }}>
+                          <span style={{ fontSize: "12px", fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, maxWidth: "160px" }}>{rw.razao_social ?? "—"}</span>
+                          <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.02em", background: pillBg, color: pillColor, borderRadius: "4px", padding: "1px 5px", flexShrink: 0, whiteSpace: "nowrap" as const }}>
+                            {severityLabel}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "#64748B", flexWrap: "wrap" as const }}>
+                          <span style={{ fontWeight: 600 }}>{dias} dia{dias !== 1 ? "s" : ""} sem orientação</span>
+                          {rw.segmento && (
+                            <>
+                              <span style={{ color: "#CBD5E1" }}>·</span>
+                              <span style={{ background: "#F8FAFC", padding: "1px 5px", borderRadius: "4px", border: "1px solid #E2E8F0" }}>{rw.segmento}</span>
+                            </>
+                          )}
+                          <span style={{ color: "#CBD5E1" }}>·</span>
+                          <span>Última: {lastTipo ? (TIPO_SHORT_LABELS[lastTipo] ?? lastTipo) : "—"}</span>
+                        </div>
+                      </div>
+
+                      {/* Ações */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+                        {severity === "critico" ? (
+                          <button onClick={() => console.log("contact:", id)}
+                            style={{ padding: "5px 10px", fontSize: "10px", fontWeight: 600, borderRadius: "6px", background: "#1D4ED8", color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" as const }}>
+                            📞 Contatar
+                          </button>
+                        ) : (
+                          <button onClick={() => console.log("followup:", id)}
+                            style={{ padding: "5px 10px", fontSize: "10px", fontWeight: 600, borderRadius: "6px", background: "#F59E0B", color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" as const }}>
+                            🕐 Acompanhar
+                          </button>
+                        )}
+                        <button
+                          onClick={() => id != null ? navigate(`/radar/${id}`) : console.log("navigate:", id)}
+                          style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", border: "1px solid #E2E8F0", borderRadius: "7px", cursor: "pointer", flexShrink: 0 }}>
+                          <svg width="14" height="14" fill="none" stroke="#64748B" strokeWidth="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
 
@@ -588,7 +660,6 @@ export default function Index() {
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {segmentos.map(([seg, count], idx) => {
                   const pct = counts.total > 0 ? (count / counts.total) * 100 : 0;
-                  const hue = [211, 197, 158, 270, 142][idx % 5];
                   return (
                     <div key={seg}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
@@ -664,69 +735,8 @@ export default function Index() {
           </div>
         </div>
 
-        {/* ── Novos blocos: Linha 1 (Atenção urgente + Top clientes) ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "16px", marginTop: "16px", marginBottom: "16px" }}>
-
-          {/* Bloco A — Atenção urgente */}
-          <div className="card-elevated" style={{ overflow: "hidden" }}>
-            <div style={{ height: "3px", background: "linear-gradient(90deg, #EF4444, #F97316)" }} />
-            <div style={{ padding: "16px 18px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#64748B", textTransform: "uppercase" as const, letterSpacing: ".04em" }}>
-                  🚨 Atenção urgente
-                </span>
-                <button onClick={() => navigate("/clientes")}
-                  style={{ fontSize: "11px", color: "#1d4ed8", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                  Ver todos →
-                </button>
-              </div>
-              {loading ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {[1, 2, 3].map(i => <div key={i} style={{ height: "52px", background: "#f3f4f6", borderRadius: "8px" }} />)}
-                </div>
-              ) : urgentClients.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "20px 0", color: "#9ca3af", fontSize: "12px" }}>Nenhum cliente crítico</div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {urgentClients.map(r => {
-                    const id = r.id ?? r.cliente_id;
-                    const dias = r.dias_sem_orientacao ?? 0;
-                    const isRed = dias > 3;
-                    const isYellow = dias >= 2 && dias <= 3;
-                    const avatarBg = isRed ? "#fef2f2" : isYellow ? "#fffbeb" : "#f1f5f9";
-                    const avatarColor = isRed ? "#dc2626" : isYellow ? "#d97706" : "#64748b";
-                    const badgeBg = isRed ? "#fef2f2" : isYellow ? "#fffbeb" : "#f1f5f9";
-                    const badgeColor = isRed ? "#dc2626" : isYellow ? "#d97706" : "#64748b";
-                    const btnStyle: React.CSSProperties = isRed
-                      ? { background: "#1d4ed8", color: "#fff", border: "none" }
-                      : isYellow
-                      ? { background: "#F59E0B", color: "#fff", border: "none" }
-                      : { background: "transparent", color: "#374151", border: "1px solid #e5e7eb" };
-                    return (
-                      <div key={String(id ?? "")} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", borderRadius: "8px", background: "#f9fafb", border: "1px solid #f3f4f6" }}>
-                        <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: avatarColor, flexShrink: 0 }}>
-                          {nameInitials(r.razao_social)}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: "12px", fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.razao_social ?? "—"}</div>
-                          {r.segmento && <div style={{ fontSize: "10px", color: "#9ca3af" }}>{r.segmento}</div>}
-                        </div>
-                        <span style={{ fontSize: "10px", fontWeight: 700, background: badgeBg, color: badgeColor, borderRadius: "12px", padding: "2px 7px", flexShrink: 0 }}>
-                          {dias}d
-                        </span>
-                        <button onClick={() => id != null && navigate(`/radar/${id}`)}
-                          style={{ padding: "4px 10px", fontSize: "10px", fontWeight: 600, borderRadius: "6px", cursor: "pointer", flexShrink: 0, ...btnStyle }}>
-                          {isRed ? "Contatar" : isYellow ? "Acompanhar" : "Ver detalhes"}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Bloco B — Top clientes */}
+        {/* ── Top clientes ── */}
+        <div style={{ marginTop: "16px", marginBottom: "16px" }}>
           <div className="card-elevated" style={{ overflow: "hidden" }}>
             <div style={{ height: "3px", background: "linear-gradient(90deg, #6366F1, #1D4ED8)" }} />
             <div style={{ padding: "16px 18px" }}>
@@ -744,7 +754,7 @@ export default function Index() {
                   Nenhuma orientação nos últimos 30 dias
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "12px" }}>
                   {topClients.map((tc, idx) => {
                     const rankColors = ["#F59E0B", "#94A3B8", "#B45309", "#94A3B8"];
                     const rankColor = rankColors[idx] ?? "#94A3B8";
@@ -782,7 +792,7 @@ export default function Index() {
           </div>
         </div>
 
-        {/* ── Novos blocos: Linha 2 (Distribuição por tipo) ── */}
+        {/* ── Distribuição por tipo ── */}
         <div className="card-elevated" style={{ overflow: "hidden" }}>
           <div style={{ height: "3px", background: "linear-gradient(90deg, #06B6D4, #14B8A6)" }} />
           <div style={{ padding: "20px 24px" }}>
