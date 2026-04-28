@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Layout } from "@/components/Layout";
 import Index from "./pages/Index.tsx";
 import RadarCliente from "./pages/RadarCliente.tsx";
 import Auth from "./pages/Auth.tsx";
@@ -16,6 +17,14 @@ import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
 
+function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <Layout>{children}</Layout>
+    </ProtectedRoute>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -25,54 +34,12 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/radar/:clienteId"
-              element={
-                <ProtectedRoute>
-                  <RadarCliente />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/clientes"
-              element={
-                <ProtectedRoute>
-                  <Clientes />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/orientacoes"
-              element={
-                <ProtectedRoute>
-                  <Orientacoes />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/followups"
-              element={
-                <ProtectedRoute>
-                  <Followups />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <Admin />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/" element={<ProtectedLayout><Index /></ProtectedLayout>} />
+            <Route path="/radar/:clienteId" element={<ProtectedLayout><RadarCliente /></ProtectedLayout>} />
+            <Route path="/clientes" element={<ProtectedLayout><Clientes /></ProtectedLayout>} />
+            <Route path="/orientacoes" element={<ProtectedLayout><Orientacoes /></ProtectedLayout>} />
+            <Route path="/followups" element={<ProtectedLayout><Followups /></ProtectedLayout>} />
+            <Route path="/admin" element={<ProtectedLayout><Admin /></ProtectedLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -45,8 +45,6 @@ export default function Clientes() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const { toast } = useToast();
-  const [userEmail, setUserEmail] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -58,12 +56,6 @@ export default function Clientes() {
   // Pagination
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState<PorPagina>(10);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) setUserEmail(data.user.email);
-    });
-  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -116,7 +108,6 @@ export default function Clientes() {
     setDiasMin("");
   };
 
-  const initials = (email: string) => email.split("@")[0].slice(0, 2).toUpperCase();
   const nameInitials = (name: string | null) =>
     (name ?? "?").trim().split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
@@ -263,14 +254,6 @@ export default function Clientes() {
     toast({ title: "Cliente excluído com sucesso." });
   };
 
-  const navItems = [
-    { label: "Dashboard", path: "/", active: false },
-    { label: "Clientes",  path: "/clientes", active: true },
-    { label: "Orientações", path: "/orientacoes", active: false },
-    { label: "Acompanhamentos", path: "/followups", active: false },
-    { label: "Administração", path: "/admin", active: false },
-  ];
-
   const pageNumbers = () => {
     if (totalPaginas <= 7) return Array.from({ length: totalPaginas }, (_, i) => i + 1);
     const pages: (number | "…")[] = [1];
@@ -287,57 +270,7 @@ export default function Clientes() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f4f6f9", fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
-
-      {/* Top nav */}
-      <header style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 30 }}>
-        <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "0 28px", display: "flex", alignItems: "center", height: "58px", gap: "28px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-            <img src="/logo_freitas.png" alt="" style={{ height: "28px", objectFit: "contain" }} />
-            <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151", borderLeft: "1px solid #e5e7eb", paddingLeft: "10px", letterSpacing: ".02em" }}>CRM Consultivo</span>
-          </div>
-
-          <nav style={{ display: "flex", gap: "2px", flex: 1 }}>
-            {navItems.map(item => (
-              <button key={item.label} onClick={() => navigate(item.path)}
-                style={{ padding: "5px 13px", fontSize: "13px", fontWeight: item.active ? 600 : 400, color: item.active ? "#1d4ed8" : "#6b7280", background: item.active ? "#eff6ff" : "transparent", border: "none", borderRadius: "6px", cursor: "pointer" }}
-                onMouseEnter={e => { if (!item.active) e.currentTarget.style.background = "#f9fafb"; }}
-                onMouseLeave={e => { if (!item.active) e.currentTarget.style.background = "transparent"; }}>
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            <button onClick={() => setMenuOpen(o => !o)}
-              style={{ display: "flex", alignItems: "center", gap: "8px", background: "transparent", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "5px 10px", cursor: "pointer" }}>
-              <div style={{ width: "27px", height: "27px", borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#1e40af)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff" }}>
-                {initials(userEmail || "TF")}
-              </div>
-              <span style={{ fontSize: "12px", color: "#374151", fontWeight: 500, maxWidth: "130px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail || "Usuário"}</span>
-              <svg width="11" height="11" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-            {menuOpen && (
-              <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,.08)", minWidth: "190px", overflow: "hidden", zIndex: 50 }}>
-                <div style={{ padding: "12px 14px", borderBottom: "1px solid #f3f4f6" }}>
-                  <div style={{ fontSize: "12px", fontWeight: 600, color: "#111827" }}>{userEmail}</div>
-                  <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "1px" }}>Administrador</div>
-                </div>
-                <button onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
-                  style={{ width: "100%", padding: "10px 14px", fontSize: "13px", color: "#dc2626", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: "8px" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                  </svg>
-                  Sair da conta
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
+    <>
       <main style={{ maxWidth: "1240px", margin: "0 auto", padding: "28px 28px 48px" }}>
 
         {/* Page header */}
@@ -594,7 +527,6 @@ export default function Clientes() {
         </div>
       </main>
 
-      {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 29 }} />}
       <NovoClienteModal open={novoOpen} onOpenChange={setNovoOpen} onSaved={() => setReloadKey(k => k + 1)} />
       <ImportarClientesModal open={importOpen} onOpenChange={setImportOpen} onSaved={() => setReloadKey(k => k + 1)} />
 
@@ -670,7 +602,7 @@ export default function Clientes() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
 
