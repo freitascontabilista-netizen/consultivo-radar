@@ -1,9 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = "https://menfidltdpxbyovuqayr.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_iFSJUzgU-dWj7FQjDiEf1w_yjHJSrCI";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export type SemaforoStatus = "verde" | "atencao" | "critico";
 

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase, type AcaoConsultivaRow, type RadarConsultivoRow } from "@/lib/supabase";
 import { CheckCircle, Plus, Calendar, AlertTriangle, Clock, ChevronDown, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -77,6 +78,8 @@ const labelCls = "block text-xs font-medium text-gray-600 mb-1";
 
 export default function Followups() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
   const [items, setItems] = useState<FollowupItem[]>([]);
   const [clientes, setClientes] = useState<RadarConsultivoRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,6 +130,11 @@ export default function Followups() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    const clienteId = (location.state as { clienteId?: string } | null)?.clienteId;
+    if (clienteId) setFiltroCliente(clienteId);
+  }, [location.state]);
+
   // ── metrics ──────────────────────────────────────────────────────────────────
 
   const metrics = useMemo(() => {
@@ -164,15 +172,17 @@ export default function Followups() {
   // ── actions ──────────────────────────────────────────────────────────────────
 
   const handleConcluir = async (id: string) => {
-    await supabase.from("acoes_consultivas").update({ status: "concluida" }).eq("id", id);
+    const { error } = await supabase.from("acoes_consultivas").update({ status: "concluida" }).eq("id", id);
+    if (error) { toast({ title: "Erro ao concluir acompanhamento", description: error.message, variant: "destructive" }); return; }
     load();
   };
 
   const handleAdiar = async () => {
     if (!adiarId || !adiarData) return;
     setAdiarSaving(true);
-    await supabase.from("acoes_consultivas").update({ data_retorno_prevista: adiarData }).eq("id", adiarId);
+    const { error } = await supabase.from("acoes_consultivas").update({ data_retorno_prevista: adiarData }).eq("id", adiarId);
     setAdiarSaving(false);
+    if (error) { toast({ title: "Erro ao adiar acompanhamento", description: error.message, variant: "destructive" }); return; }
     setAdiarId(null);
     setAdiarData("");
     load();

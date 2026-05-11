@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, type RadarConsultivoRow, type SemaforoStatus } from "@/lib/supabase";
+import { supabase, type InteracaoRow, type RadarConsultivoRow, type SemaforoStatus } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { TIPOS_ORIENTACAO } from "@/lib/constants";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NovoClienteModal } from "@/components/NovoClienteModal";
@@ -63,22 +64,17 @@ function TipoDonut({ data, total }: { data: [string, number][]; total: number })
 
 export default function Index() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [rows, setRows] = useState<RadarConsultivoRow[]>([]);
-  const [interacoes, setInteracoes] = useState<any[]>([]);
+  const [interacoes, setInteracoes] = useState<InteracaoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [novoOpen, setNovoOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [userEmail, setUserEmail] = useState("");
+  const userEmail = user?.email ?? "";
   const [mounted, setMounted] = useState(false);
   const [displayCounts, setDisplayCounts] = useState({ total: 0, critico: 0, atencao: 0, followups: 0 });
   const [atencaoFilter, setAtencaoFilter] = useState<"todos" | "critico" | "atencao" | "monitorar">("todos");
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) setUserEmail(data.user.email);
-    });
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -91,7 +87,7 @@ export default function Index() {
       if (!active) return;
       if (error) { setError(error.message); setRows([]); }
       else { setRows((data ?? []) as RadarConsultivoRow[]); setError(null); }
-      setInteracoes((intData ?? []) as any[]);
+      setInteracoes((intData ?? []) as InteracaoRow[]);
       setLoading(false);
     })();
     return () => { active = false; };
@@ -612,12 +608,21 @@ export default function Index() {
                       {/* Ações */}
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
                         {severity === "critico" ? (
-                          <button onClick={() => console.log("contact:", id)}
+                          <button
+                            onClick={() => {
+                              const telefone = (rw as any).telefone as string | undefined;
+                              if (telefone) {
+                                window.open(`https://wa.me/${telefone.replace(/\D/g, "")}`, "_blank");
+                              } else {
+                                navigate(`/radar/${id}`);
+                              }
+                            }}
                             style={{ padding: "5px 10px", fontSize: "10px", fontWeight: 600, borderRadius: "6px", background: "#1D4ED8", color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" as const }}>
                             📞 Contatar
                           </button>
                         ) : (
-                          <button onClick={() => console.log("followup:", id)}
+                          <button
+                            onClick={() => navigate("/followups", { state: { clienteId: String(rw.cliente_id ?? id) } })}
                             style={{ padding: "5px 10px", fontSize: "10px", fontWeight: 600, borderRadius: "6px", background: "#F59E0B", color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" as const }}>
                             🕐 Acompanhar
                           </button>

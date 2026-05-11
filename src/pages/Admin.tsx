@@ -34,10 +34,6 @@ interface Meta {
 const initials = (nome: string) =>
   nome.split(" ").filter(Boolean).map(w => w[0]).slice(0, 2).join("").toUpperCase();
 
-const now = new Date();
-const MES_ATUAL = now.getMonth() + 1;
-const ANO_ATUAL = now.getFullYear();
-
 type Tab = "usuarios" | "log" | "relatorios" | "metas";
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
@@ -60,6 +56,9 @@ const lbl: React.CSSProperties = {
 export default function Admin() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const now = new Date();
+  const MES_ATUAL = now.getMonth() + 1;
+  const ANO_ATUAL = now.getFullYear();
   const [tab, setTab] = useState<Tab>("usuarios");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,10 +77,11 @@ export default function Admin() {
   const [exportando, setExportando] = useState("");
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("usuarios").select("*").order("criado_em", { ascending: false });
+    const { data, error } = await supabase.from("usuarios").select("*").order("criado_em", { ascending: false });
+    if (error) toast({ title: "Erro ao carregar usuários", description: error.message, variant: "destructive" });
     setUsuarios((data ?? []) as Usuario[]);
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   const loadLogs = useCallback(async () => {
     setLoadingLog(true);
@@ -121,15 +121,13 @@ export default function Admin() {
       return;
     }
     setSaving(true);
-    const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: senha, options: { data: { nome } } });
-    if (authError) {
-      toast({ title: "Erro ao criar usuário", description: authError.message, variant: "destructive" });
+    const { data: fnData, error: fnError } = await supabase.functions.invoke("criar-usuario", {
+      body: { nome, email, senha, role },
+    });
+    if (fnError || fnData?.error) {
+      toast({ title: "Erro ao criar usuário", description: fnData?.error ?? fnError?.message, variant: "destructive" });
       setSaving(false);
       return;
-    }
-    if (authData.user) {
-      await supabase.from("usuarios").insert({ id: authData.user.id, nome, email, ativo: true, role });
-      await supabase.from("activity_logs").insert({ usuario_nome: "Admin", acao: `Novo usuário criado: ${nome}`, entidade: "usuario", entidade_id: authData.user.id });
     }
     toast({ title: "Usuário criado com sucesso!" });
     setNome(""); setEmail(""); setSenha(""); setRole("colaborador");
@@ -138,14 +136,16 @@ export default function Admin() {
   };
 
   const handleDesativar = async (id: string) => {
-    await supabase.from("usuarios").update({ ativo: false }).eq("id", id);
+    const { error } = await supabase.from("usuarios").update({ ativo: false }).eq("id", id);
+    if (error) { toast({ title: "Erro ao desativar usuário", description: error.message, variant: "destructive" }); return; }
     await supabase.from("activity_logs").insert({ usuario_nome: "Admin", acao: "Usuário desativado", entidade: "usuario", entidade_id: id });
     toast({ title: "Usuário desativado" });
     load();
   };
 
   const handleAtivar = async (id: string) => {
-    await supabase.from("usuarios").update({ ativo: true }).eq("id", id);
+    const { error } = await supabase.from("usuarios").update({ ativo: true }).eq("id", id);
+    if (error) { toast({ title: "Erro ao ativar usuário", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Usuário ativado" });
     load();
   };
@@ -153,10 +153,11 @@ export default function Admin() {
   const handleSalvarEdicao = async () => {
     if (!editando) return;
     setSaving(true);
-    await supabase.from("usuarios").update({ nome: editando.nome, role: editando.role }).eq("id", editando.id);
+    const { error } = await supabase.from("usuarios").update({ nome: editando.nome, role: editando.role }).eq("id", editando.id);
+    setSaving(false);
+    if (error) { toast({ title: "Erro ao atualizar usuário", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Usuário atualizado!" });
     setEditando(null);
-    setSaving(false);
     load();
   };
 

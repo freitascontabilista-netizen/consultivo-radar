@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
-type Tela = "login" | "esqueci" | "codigo" | "nova_senha";
+type Tela = "login" | "esqueci" | "codigo";
 
 export default function Auth() {
   const { user, loading: authLoading } = useAuth();
@@ -16,25 +16,10 @@ export default function Auth() {
   const [tela, setTela] = useState<Tela>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [novaSenha, setNovaSenha] = useState("");
-  const [confirmarSenha, setConfirmarSenha] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     document.title = "Entrar | CRM Consultivo";
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setTela("nova_senha");
-      }
-    });
-
-    const hash = window.location.hash;
-    if (hash.includes("type=recovery")) {
-      setTela("nova_senha");
-    }
-
-    return () => subscription.unsubscribe();
   }, []);
 
   if (!authLoading && user && tela === "login") {
@@ -60,7 +45,7 @@ export default function Auth() {
     e.preventDefault();
     setSubmitting(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: `${window.location.origin}/redefinir-senha`,
     });
     setSubmitting(false);
     if (error) {
@@ -69,31 +54,6 @@ export default function Auth() {
     }
     toast({ title: "E-mail enviado!", description: "Verifique sua caixa de entrada e clique no link." });
     setTela("codigo");
-  };
-
-  // ── Salvar nova senha ──────────────────────────────
-  const handleNovaSenha = async (e: FormEvent) => {
-    e.preventDefault();
-    if (novaSenha !== confirmarSenha) {
-      toast({ title: "As senhas não coincidem", variant: "destructive" });
-      return;
-    }
-    if (novaSenha.length < 6) {
-      toast({ title: "A senha deve ter pelo menos 6 caracteres", variant: "destructive" });
-      return;
-    }
-    setSubmitting(true);
-    const { error } = await supabase.auth.updateUser({ password: novaSenha });
-    setSubmitting(false);
-    if (error) {
-      toast({ title: "Erro ao atualizar senha", description: error.message, variant: "destructive" });
-      return;
-    }
-    toast({ title: "Senha atualizada com sucesso!" });
-    await supabase.auth.signOut();
-    setTela("login");
-    setNovaSenha("");
-    setConfirmarSenha("");
   };
 
   // ── Estilos ────────────────────────────────────────
@@ -182,29 +142,6 @@ export default function Auth() {
                 Voltar ao login
               </button>
             </div>
-          )}
-
-          {/* ── TELA: NOVA SENHA ── */}
-          {tela === "nova_senha" && (
-            <form onSubmit={handleNovaSenha}>
-              <div style={s.title}>Criar nova senha</div>
-              <div style={s.sub}>Escolha uma senha segura com pelo menos 6 caracteres.</div>
-
-              <label style={s.label}>Nova senha</label>
-              <input style={s.input} type="password" required minLength={6} value={novaSenha} onChange={e => setNovaSenha(e.target.value)} placeholder="Mínimo 6 caracteres" />
-
-              <label style={s.label}>Confirmar nova senha</label>
-              <input style={{ ...s.input, borderColor: confirmarSenha && novaSenha !== confirmarSenha ? "#ef4444" : "#e2e8f0" }} type="password" required value={confirmarSenha} onChange={e => setConfirmarSenha(e.target.value)} placeholder="Repita a senha" />
-
-              {confirmarSenha && novaSenha !== confirmarSenha && (
-                <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "-12px", marginBottom: "12px" }}>As senhas não coincidem</div>
-              )}
-
-              <button type="submit" disabled={submitting || (!!confirmarSenha && novaSenha !== confirmarSenha)} style={{ ...s.btnGreen, opacity: submitting ? .7 : 1 }}>
-                {submitting && <Loader2 style={{ width: "16px", height: "16px", animation: "spin 1s linear infinite" }} />}
-                Salvar nova senha
-              </button>
-            </form>
           )}
 
         </div>

@@ -157,22 +157,11 @@ export default function Clientes() {
     }
 
     if (campoConfirmado === null || idConfirmado === null) {
-      // Nenhum candidato achou a linha — expõe todos os dados para diagnóstico
-      const todosOsCampos = Object.entries(deleteTarget)
-        .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
-        .join("\n");
-
-      console.error("[DELETE] cliente não localizado em nenhum candidato");
+      const todosOsCampos = Object.entries(deleteTarget).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join("\n");
+      console.error("[DELETE] cliente não localizado em nenhum candidato. Candidatos:", candidatos, "Campos:", todosOsCampos);
       console.groupEnd();
       setDeleting(false);
-      setDeleteError(
-        "Não foi possível localizar o cliente na tabela clientes.\n\n" +
-        "Candidatos testados:\n" +
-        candidatos.map(c => `  ${c.campo} = ${c.valor}`).join("\n") +
-        "\n\nCampos disponíveis no objeto da view:\n" +
-        todosOsCampos +
-        "\n\nVeja o console (F12) para detalhes completos."
-      );
+      setDeleteError("Não foi possível excluir o cliente. Verifique se ele não possui orientações ou acompanhamentos vinculados.");
       return;
     }
 
@@ -228,22 +217,14 @@ export default function Clientes() {
     setDeleting(false);
 
     if (errCliente) {
-      setDeleteError(
-        `Erro ao excluir (${campoConfirmado}=${idConfirmado}):\n` +
-        `${errCliente.message}\n` +
-        `code: ${(errCliente as any).code ?? "—"}\n` +
-        `details: ${(errCliente as any).details ?? "—"}\n` +
-        `hint: ${(errCliente as any).hint ?? "—"}`
-      );
+      console.error("[DELETE] erro ao excluir cliente:", { campo: campoConfirmado, valor: idConfirmado, error: errCliente });
+      setDeleteError("Não foi possível excluir o cliente. Verifique se ele não possui orientações ou acompanhamentos vinculados.");
       return;
     }
 
     if ((cntCliente ?? 0) === 0) {
-      setDeleteError(
-        `Delete executou sem erro mas afetou 0 linhas.\n` +
-        `Campo: ${campoConfirmado} | Valor: ${idConfirmado}\n` +
-        `Isso pode indicar uma política RLS que bloqueia silenciosamente.`
-      );
+      console.error("[DELETE] nenhuma linha afetada:", { campo: campoConfirmado, valor: idConfirmado });
+      setDeleteError("Não foi possível excluir o cliente. Verifique se ele não possui orientações ou acompanhamentos vinculados.");
       return;
     }
 
@@ -564,9 +545,8 @@ export default function Clientes() {
 
           {deleteError && (
             <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "10px 14px", marginTop: "4px" }}>
-              <div style={{ fontSize: "12px", fontWeight: 600, color: "#dc2626", marginBottom: "6px" }}>Erro ao excluir</div>
-              <pre style={{ fontSize: "11px", color: "#b91c1c", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all", margin: 0 }}>{deleteError}</pre>
-              <div style={{ fontSize: "10px", color: "#9ca3af", marginTop: "6px" }}>Veja o console do navegador (F12) para o diagnóstico completo.</div>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "#dc2626", marginBottom: "4px" }}>Erro ao excluir</div>
+              <p style={{ fontSize: "12px", color: "#b91c1c", margin: 0 }}>{deleteError}</p>
             </div>
           )}
 

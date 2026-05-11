@@ -10,7 +10,8 @@ import {
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { RegistrarOrientacaoModal } from "@/components/RegistrarOrientacaoModal";
-import { Pencil, X, Trash2, Calendar, Clock, AlertCircle, CheckCircle2, Tag, MapPin, Building2, StickyNote, Zap, Target, AlertTriangle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Pencil, X, Trash2, Calendar, Clock, AlertCircle, CheckCircle2, Tag, MapPin, Building2, StickyNote, Zap, Target, AlertTriangle, Loader2 } from "lucide-react";
 
 const tipoConfig: Record<string, { label: string; bg: string; color: string }> = {
   consultiva:     { label: "Consultiva",     bg: "#dbeafe", color: "#1d4ed8" },
@@ -79,6 +80,8 @@ export default function RadarCliente() {
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "single"; id: string } | { type: "bulk"; count: number } | null>(null);
+  const [confirmDeleting, setConfirmDeleting] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -204,11 +207,31 @@ export default function RadarCliente() {
     load();
   };
 
-  const handleDeleteInteracao = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta interação?")) return;
-    setDeletingId(id);
-    await supabase.from("interacoes").delete().eq("id", id);
-    setDeletingId(null);
+  const handleDeleteInteracao = (id: string) => {
+    setDeleteConfirm({ type: "single", id });
+  };
+
+  const handleBulkDelete = () => {
+    const count = selectedIds.size;
+    if (!count) return;
+    setDeleteConfirm({ type: "bulk", count });
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirm) return;
+    setConfirmDeleting(true);
+    if (deleteConfirm.type === "single") {
+      setDeletingId(deleteConfirm.id);
+      await supabase.from("interacoes").delete().eq("id", deleteConfirm.id);
+      setDeletingId(null);
+    } else {
+      setDeletingId("bulk");
+      await supabase.from("interacoes").delete().in("id", Array.from(selectedIds));
+      setSelectedIds(new Set());
+      setDeletingId(null);
+    }
+    setDeleteConfirm(null);
+    setConfirmDeleting(false);
     setPaginaAtual(1);
     load();
   };
@@ -218,18 +241,6 @@ export default function RadarCliente() {
   };
 
   const clearSelection = () => setSelectedIds(new Set());
-
-  const handleBulkDelete = async () => {
-    const count = selectedIds.size;
-    if (!count) return;
-    if (!confirm(`Excluir ${count} interação${count > 1 ? "ões" : ""}? Esta ação não pode ser desfeita.`)) return;
-    setDeletingId("bulk");
-    await supabase.from("interacoes").delete().in("id", Array.from(selectedIds));
-    setSelectedIds(new Set());
-    setDeletingId(null);
-    setPaginaAtual(1);
-    load();
-  };
 
   const ultimaOrientacao = useMemo(() => {
     if (cliente?.ultima_orientacao_consultiva) return formatDate(cliente.ultima_orientacao_consultiva);
@@ -667,6 +678,43 @@ export default function RadarCliente() {
           </div>
         </div>
       )}
+
+      {/* Modal de confirmação de exclusão de interação */}
+      <Dialog open={!!deleteConfirm} onOpenChange={open => { if (!open && !confirmDeleting) setDeleteConfirm(null); }}>
+        <DialogContent style={{ maxWidth: "400px" }}>
+          <DialogHeader>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "50%", background: "#fef2f2", marginBottom: "12px" }}>
+              <svg width="20" height="20" fill="none" stroke="#dc2626" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
+              </svg>
+            </div>
+            <DialogTitle style={{ fontSize: "16px", fontWeight: 600, color: "#111827" }}>
+              {deleteConfirm?.type === "bulk"
+                ? `Excluir ${deleteConfirm.count} interação${deleteConfirm.count > 1 ? "ões" : ""}?`
+                : "Excluir interação?"}
+            </DialogTitle>
+            <DialogDescription style={{ fontSize: "13px", color: "#6b7280", marginTop: "4px" }}>
+              Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "8px" }}>
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              disabled={confirmDeleting}
+              style={{ padding: "8px 16px", fontSize: "13px", fontWeight: 500, border: "1px solid #e5e7eb", borderRadius: "7px", background: "#fff", color: "#374151", cursor: confirmDeleting ? "default" : "pointer", opacity: confirmDeleting ? 0.5 : 1 }}>
+              Cancelar
+            </button>
+            <button
+              onClick={executeDelete}
+              disabled={confirmDeleting}
+              style={{ display: "flex", alignItems: "center", gap: "7px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, border: "none", borderRadius: "7px", background: confirmDeleting ? "#f87171" : "#dc2626", color: "#fff", cursor: confirmDeleting ? "default" : "pointer" }}>
+              {confirmDeleting
+                ? <><Loader2 size={13} className="animate-spin" /> Excluindo...</>
+                : <><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Excluir</>}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
