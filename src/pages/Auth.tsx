@@ -90,10 +90,10 @@ export default function Auth() {
 
   return (
     <>
-      <div className="auth-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "100vh" }}>
+      <div className="auth-grid" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, display: "grid", gridTemplateColumns: "1fr 1fr", overflow: "hidden" }}>
 
         {/* ═══════ LADO ESQUERDO ═══════ */}
-        <div className="auth-left" style={{ background: "#060D1A", padding: "52px 48px", display: "flex", flexDirection: "column", justifyContent: "flex-start", position: "relative", overflowY: "auto", height: "100vh" }}>
+        <div className="auth-left" style={{ background: "#060D1A", padding: "48px 10%", display: "flex", flexDirection: "column", justifyContent: "space-between", position: "relative", overflowY: "auto", height: "100%" }}>
 
           {/* Orbs de fundo */}
           <div style={{ position: "absolute", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(circle, rgba(16,185,129,0.07), transparent 70%)", bottom: "-120px", right: "-100px", pointerEvents: "none", animation: "breathe 7s ease-in-out infinite" }} />
@@ -112,7 +112,7 @@ export default function Auth() {
           </div>
 
           {/* Blocos 2+3+4 — centralizados no espaço restante */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "28px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
 
           {/* Bloco 2 — Headline */}
           <div style={{ animation: "fadeUp 0.5s ease 0.08s both" }}>
@@ -170,10 +170,13 @@ export default function Auth() {
         </div>
 
         {/* ═══════ LADO DIREITO ═══════ */}
-        <div style={{ background: "#F1F5F9", padding: "0 48px", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflowY: "auto", height: "100vh" }}>
+        <div style={{ background: "#F1F5F9", padding: "48px 10%", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflowY: "auto", height: "100%" }}>
 
           {/* Faixa superior */}
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "linear-gradient(90deg, #1D4ED8, #6366F1)" }} />
+
+          {/* Conteúdo centralizado */}
+          <div style={{ maxWidth: "400px", width: "100%", margin: "0 auto" }}>
 
           {/* Header do formulário */}
           <div style={{ marginBottom: "28px" }}>
@@ -304,6 +307,8 @@ export default function Auth() {
               ))}
             </div>
           </div>
+
+          </div>{/* fim do conteúdo centralizado */}
         </div>
       </div>
 
