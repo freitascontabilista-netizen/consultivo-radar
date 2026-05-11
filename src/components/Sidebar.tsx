@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, FileText, CheckCircle2, Settings, LogOut,
+  LayoutDashboard, Users, FileText, CheckCircle2, CalendarDays, Settings, LogOut,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -119,6 +119,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <NavItem to="/clientes"    icon={<Users size={15} />}            label="Clientes" />
         <NavItem to="/orientacoes" icon={<FileText size={15} />}         label="Orientações" />
         <NavItem to="/followups"   icon={<CheckCircle2 size={15} />}     label="Acompanhamentos" />
+        <NavItem to="/agenda"      icon={<CalendarDays size={15} />}     label="Agenda" />
 
         <div style={{ fontSize: "10px", fontWeight: 600, color: "#94A3B8", letterSpacing: "0.06em", textTransform: "uppercase" as const, margin: "12px 8px 6px" }}>
           Sistema

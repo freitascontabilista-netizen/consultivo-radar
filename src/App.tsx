@@ -13,6 +13,8 @@ import Admin from "./pages/Admin.tsx";
 import Clientes from "./pages/Clientes.tsx";
 import Orientacoes from "./pages/Orientacoes.tsx";
 import Followups from "./pages/Followups.tsx";
+import Agenda from "./pages/Agenda.tsx";
+import RedefinirSenha from "./pages/RedefinirSenha.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -34,11 +36,13 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/redefinir-senha" element={<RedefinirSenha />} />
             <Route path="/" element={<ProtectedLayout><Index /></ProtectedLayout>} />
             <Route path="/radar/:clienteId" element={<ProtectedLayout><RadarCliente /></ProtectedLayout>} />
             <Route path="/clientes" element={<ProtectedLayout><Clientes /></ProtectedLayout>} />
             <Route path="/orientacoes" element={<ProtectedLayout><Orientacoes /></ProtectedLayout>} />
             <Route path="/followups" element={<ProtectedLayout><Followups /></ProtectedLayout>} />
+            <Route path="/agenda" element={<ProtectedLayout><Agenda /></ProtectedLayout>} />
             <Route path="/admin" element={<ProtectedLayout><Admin /></ProtectedLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
