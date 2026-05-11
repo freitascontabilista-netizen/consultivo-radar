@@ -112,15 +112,15 @@ export default function Index() {
     const result: Array<{ row: RadarConsultivoRow; severity: "critico" | "atencao" | "monitorar" }> = [];
     for (const r of rows) {
       const dias = r.dias_sem_orientacao ?? 0;
-      if (dias === 0) continue;
-      let severity: "critico" | "atencao" | "monitorar";
+      let severity: "critico" | "atencao" | "monitorar" | null = null;
       if (r.semaforo === "critico" || dias >= 5) {
         severity = "critico";
-      } else if (dias >= 2 && dias <= 4) {
+      } else if (r.semaforo === "atencao" || (dias >= 2 && dias <= 4)) {
         severity = "atencao";
-      } else {
+      } else if (dias === 1) {
         severity = "monitorar";
       }
+      if (severity === null) continue;
       result.push({ row: r, severity });
     }
     const order = { critico: 0, atencao: 1, monitorar: 2 };
