@@ -88,8 +88,9 @@ export default function RedefinirSenha() {
 
         {/* Logo */}
         <div style={s.logo}>
-          <img src="/logo_freitas.png" alt="Freitas" style={{ height: "60px", objectFit: "contain" }} />
-          <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "6px" }}>CRM Consultivo</p>
+          <div style={{ width: "52px", height: "52px", background: "#10b981", borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "26px", fontWeight: 800, color: "#fff", margin: "0 auto" }}>F</div>
+          <p style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", marginTop: "10px", marginBottom: 0 }}>Freitas</p>
+          <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>CRM Consultivo</p>
         </div>
 
         <div style={s.card}>

@@ -103,7 +103,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         marginBottom: "12px",
         flexShrink: 0,
       }}>
-        <img src="/logo_freitas.png" alt="Freitas" style={{ height: "28px", objectFit: "contain" }} />
+        <div style={{ width: "32px", height: "32px", background: "#10b981", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", fontWeight: 800, color: "#fff", flexShrink: 0 }}>F</div>
         <div>
           <div style={{ fontSize: "14px", fontWeight: 700, color: "#0F172A", lineHeight: 1.2 }}>Freitas</div>
           <div style={{ fontSize: "10px", color: "#94A3B8", lineHeight: 1.4 }}>CRM Consultivo</div>

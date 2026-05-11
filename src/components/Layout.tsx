@@ -70,7 +70,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           >
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <img src="/logo_freitas.png" alt="Freitas" style={{ height: "22px", objectFit: "contain", marginLeft: "12px" }} />
+          <div style={{ width: "24px", height: "24px", background: "#10b981", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 800, color: "#fff", marginLeft: "12px" }}>F</div>
         </div>
 
         {children}
