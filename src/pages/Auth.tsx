@@ -90,10 +90,10 @@ export default function Auth() {
 
   return (
     <>
-      <div className="auth-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: "100vh" }}>
+      <div className="auth-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "100vh" }}>
 
         {/* ═══════ LADO ESQUERDO ═══════ */}
-        <div className="auth-left" style={{ background: "#060D1A", padding: "52px 48px", display: "flex", flexDirection: "column", justifyContent: "flex-start", position: "relative", overflow: "hidden" }}>
+        <div className="auth-left" style={{ background: "#060D1A", padding: "52px 48px", display: "flex", flexDirection: "column", justifyContent: "flex-start", position: "relative", overflowY: "auto", height: "100vh" }}>
 
           {/* Orbs de fundo */}
           <div style={{ position: "absolute", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(circle, rgba(16,185,129,0.07), transparent 70%)", bottom: "-120px", right: "-100px", pointerEvents: "none", animation: "breathe 7s ease-in-out infinite" }} />
@@ -170,7 +170,7 @@ export default function Auth() {
         </div>
 
         {/* ═══════ LADO DIREITO ═══════ */}
-        <div style={{ background: "#F1F5F9", padding: "0 48px", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflowY: "auto" }}>
+        <div style={{ background: "#F1F5F9", padding: "0 48px", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflowY: "auto", height: "100vh" }}>
 
           {/* Faixa superior */}
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "linear-gradient(90deg, #1D4ED8, #6366F1)" }} />
