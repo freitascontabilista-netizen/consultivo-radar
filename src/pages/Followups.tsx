@@ -88,6 +88,10 @@ export default function Followups() {
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroPrioridade, setFiltroPrioridade] = useState("");
 
+  // pagination
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState<10 | 20 | 50 | 100>(10);
+
   // adiar modal
   const [adiarId, setAdiarId] = useState<string | null>(null);
   const [adiarData, setAdiarData] = useState("");
@@ -135,6 +139,8 @@ export default function Followups() {
     if (clienteId) setFiltroCliente(clienteId);
   }, [location.state]);
 
+  useEffect(() => { setPagina(1); }, [filtroStatus, filtroCliente, filtroPrioridade]);
+
   // ── metrics ──────────────────────────────────────────────────────────────────
 
   const metrics = useMemo(() => {
@@ -162,12 +168,18 @@ export default function Followups() {
     return true;
   }), [items, filtroStatus, filtroCliente, filtroPrioridade]);
 
+  const totalPaginas = Math.max(1, Math.ceil(filtered.length / porPagina));
+  const filteredPaginado = useMemo(
+    () => filtered.slice((pagina - 1) * porPagina, pagina * porPagina),
+    [filtered, pagina, porPagina],
+  );
+
   const groups = useMemo(() => ({
-    atrasado: filtered.filter(i => i._group === "atrasado"),
-    hoje:     filtered.filter(i => i._group === "hoje"),
-    proximo:  filtered.filter(i => i._group === "proximo"),
-    concluido:filtered.filter(i => i._group === "concluido"),
-  }), [filtered]);
+    atrasado: filteredPaginado.filter(i => i._group === "atrasado"),
+    hoje:     filteredPaginado.filter(i => i._group === "hoje"),
+    proximo:  filteredPaginado.filter(i => i._group === "proximo"),
+    concluido:filteredPaginado.filter(i => i._group === "concluido"),
+  }), [filteredPaginado]);
 
   // ── actions ──────────────────────────────────────────────────────────────────
 
@@ -417,6 +429,70 @@ export default function Followups() {
             {renderGroup("proximo",  groups.proximo)}
             {renderGroup("concluido",groups.concluido)}
           </>
+        )}
+
+        {/* ── pagination footer ── */}
+        {!loading && filtered.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "16px", flexWrap: "wrap", gap: "10px" }}>
+
+            {/* left: por página */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "12px", color: "#6b7280" }}>Exibir por página:</span>
+              <div style={{ display: "flex", gap: "4px" }}>
+                {([10, 20, 50, 100] as const).map(n => (
+                  <button key={n} onClick={() => { setPorPagina(n); setPagina(1); }}
+                    style={{ padding: "4px 10px", fontSize: "12px", fontWeight: porPagina === n ? 700 : 400, border: "1px solid", borderColor: porPagina === n ? "#1d4ed8" : "#e5e7eb", borderRadius: "6px", background: porPagina === n ? "#eff6ff" : "#fff", color: porPagina === n ? "#1d4ed8" : "#374151", cursor: "pointer" }}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* right: info + navegação */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                Exibindo {(pagina - 1) * porPagina + 1}–{Math.min(pagina * porPagina, filtered.length)} de {filtered.length} acompanhamento{filtered.length !== 1 ? "s" : ""}
+              </span>
+
+              <div style={{ display: "flex", gap: "4px" }}>
+                {/* anterior */}
+                <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}
+                  style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e5e7eb", borderRadius: "6px", background: "#fff", color: pagina === 1 ? "#d1d5db" : "#374151", cursor: pagina === 1 ? "default" : "pointer" }}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+
+                {/* números */}
+                {(() => {
+                  const pages: (number | "…")[] = [];
+                  if (totalPaginas <= 7) {
+                    for (let p = 1; p <= totalPaginas; p++) pages.push(p);
+                  } else {
+                    pages.push(1);
+                    if (pagina > 3) pages.push("…");
+                    for (let p = Math.max(2, pagina - 1); p <= Math.min(totalPaginas - 1, pagina + 1); p++) pages.push(p);
+                    if (pagina < totalPaginas - 2) pages.push("…");
+                    pages.push(totalPaginas);
+                  }
+                  return pages.map((p, i) =>
+                    p === "…" ? (
+                      <span key={`e${i}`} style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "#9ca3af" }}>…</span>
+                    ) : (
+                      <button key={p} onClick={() => setPagina(p as number)}
+                        style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid", borderColor: pagina === p ? "#1d4ed8" : "#e5e7eb", borderRadius: "6px", background: pagina === p ? "#eff6ff" : "#fff", color: pagina === p ? "#1d4ed8" : "#374151", fontSize: "12px", fontWeight: pagina === p ? 700 : 400, cursor: "pointer" }}>
+                        {p}
+                      </button>
+                    )
+                  );
+                })()}
+
+                {/* próxima */}
+                <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas}
+                  style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e5e7eb", borderRadius: "6px", background: "#fff", color: pagina === totalPaginas ? "#d1d5db" : "#374151", cursor: pagina === totalPaginas ? "default" : "pointer" }}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
 
