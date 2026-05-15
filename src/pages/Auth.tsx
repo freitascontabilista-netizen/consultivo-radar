@@ -93,14 +93,14 @@ export default function Auth() {
       <div className="auth-grid" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, display: "grid", gridTemplateColumns: "1fr 1fr", overflow: "hidden" }}>
 
         {/* ═══════ LADO ESQUERDO ═══════ */}
-        <div className="auth-left" style={{ background: "#060D1A", padding: "48px 10%", display: "flex", flexDirection: "column", justifyContent: "space-between", position: "relative", overflowY: "auto", height: "100%" }}>
+        <div className="auth-left" style={{ background: "#060D1A", padding: "44px 48px", display: "flex", flexDirection: "column", justifyContent: "space-between", position: "relative", height: "100vh", gap: 0 }}>
 
           {/* Orbs de fundo */}
           <div style={{ position: "absolute", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(circle, rgba(16,185,129,0.07), transparent 70%)", bottom: "-120px", right: "-100px", pointerEvents: "none", animation: "breathe 7s ease-in-out infinite" }} />
           <div style={{ position: "absolute", width: "250px", height: "250px", borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.07), transparent 70%)", top: "-80px", left: "-60px", pointerEvents: "none", animation: "breathe 9s ease-in-out infinite reverse" }} />
 
           {/* Bloco 1 — Logo */}
-          <div style={{ animation: "fadeUp 0.5s ease 0s both" }}>
+          <div style={{ animation: "fadeUp 0.5s ease 0s both", flex: "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
               <div style={{ width: "34px", height: "34px", background: "#10B981", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px", fontWeight: 700, color: "#fff", flexShrink: 0 }}>F</div>
               <span style={{ color: "#fff", fontSize: "14px", fontWeight: 500 }}>Consultivo Radar</span>
@@ -111,11 +111,8 @@ export default function Auth() {
             </div>
           </div>
 
-          {/* Blocos 2+3+4 — centralizados no espaço restante */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
-
           {/* Bloco 2 — Headline */}
-          <div style={{ animation: "fadeUp 0.5s ease 0.08s both" }}>
+          <div style={{ animation: "fadeUp 0.5s ease 0.08s both", flex: "none", margin: "auto 0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
               <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
               <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "10px", textTransform: "uppercase" as const, letterSpacing: "0.1em", whiteSpace: "nowrap" as const }}>Para contadores consultores</span>
@@ -130,7 +127,7 @@ export default function Auth() {
           </div>
 
           {/* Bloco 3 — Métricas */}
-          <div style={{ animation: "fadeUp 0.5s ease 0.16s both" }}>
+          <div style={{ animation: "fadeUp 0.5s ease 0.16s both", flex: "none" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1px", background: "rgba(255,255,255,0.06)", borderRadius: "10px", overflow: "hidden" }}>
               {metrics.map(m => (
                 <div key={m.label} style={{ background: "#060D1A", padding: "16px 14px" }}>
@@ -144,7 +141,7 @@ export default function Auth() {
           </div>
 
           {/* Bloco 4 — Funcionalidades */}
-          <div style={{ animation: "fadeUp 0.5s ease 0.24s both" }}>
+          <div style={{ animation: "fadeUp 0.5s ease 0.24s both", flex: "none" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
               {features.map(f => {
                 const Icon = f.icon;
@@ -166,17 +163,16 @@ export default function Auth() {
             </div>
           </div>
 
-          </div>{/* fim do grupo central 2+3+4 */}
         </div>
 
         {/* ═══════ LADO DIREITO ═══════ */}
-        <div style={{ background: "#F1F5F9", padding: "48px 10%", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflowY: "auto", height: "100%" }}>
+        <div style={{ background: "#fff", padding: "48px 10%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative", overflowY: "auto", height: "100vh" }}>
 
           {/* Faixa superior */}
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "linear-gradient(90deg, #1D4ED8, #6366F1)" }} />
+          <div style={{ position: "fixed", top: 0, right: 0, width: "50vw", height: "3px", background: "linear-gradient(90deg, #1D4ED8, #6366F1, #10B981)" }} />
 
           {/* Conteúdo centralizado */}
-          <div style={{ maxWidth: "400px", width: "100%", margin: "0 auto" }}>
+          <div style={{ width: "100%", maxWidth: "380px" }}>
 
           {/* Header do formulário */}
           <div style={{ marginBottom: "28px" }}>
