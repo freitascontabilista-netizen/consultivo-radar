@@ -110,12 +110,11 @@ export default function Auth() {
           className="auth-left"
           style={{
             background: "#060D1A",
-            height: "100vh",
+            height: "100%",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
             padding: "44px 48px",
-            overflow: "hidden",
             position: "relative",
           }}
         >
@@ -202,7 +201,7 @@ export default function Auth() {
         <div
           style={{
             background: "#F8FAFC",
-            height: "100vh",
+            height: "100%",
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
