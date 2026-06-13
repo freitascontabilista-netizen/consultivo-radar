@@ -9,7 +9,7 @@ interface Usuario {
   nome: string;
   email: string;
   ativo: boolean;
-  role?: string;
+  perfil?: string;
   criado_em: string;
 }
 
@@ -107,7 +107,7 @@ export default function Admin() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [role, setRole] = useState("colaborador");
+  const [perfil, setPerfil] = useState("consultor");
   const [editando, setEditando] = useState<Usuario | null>(null);
 
   // Log
@@ -203,7 +203,7 @@ export default function Admin() {
     }
     setSaving(true);
     const { data: fnData, error: fnError } = await supabase.functions.invoke("criar-usuario", {
-      body: { nome, email, senha, role },
+      body: { nome, email, senha, perfil },
     });
     if (fnError || fnData?.error) {
       toast({ title: "Erro ao criar usuário", description: fnData?.error ?? fnError?.message, variant: "destructive" });
@@ -211,7 +211,7 @@ export default function Admin() {
       return;
     }
     toast({ title: "Usuário criado com sucesso!" });
-    setNome(""); setEmail(""); setSenha(""); setRole("colaborador");
+    setNome(""); setEmail(""); setSenha(""); setPerfil("consultor");
     setSaving(false);
     load();
   };
@@ -234,7 +234,7 @@ export default function Admin() {
   const handleSalvarEdicao = async () => {
     if (!editando) return;
     setSaving(true);
-    const { error } = await supabase.from("usuarios").update({ nome: editando.nome, role: editando.role }).eq("id", editando.id);
+    const { error } = await supabase.from("usuarios").update({ nome: editando.nome, perfil: editando.perfil }).eq("id", editando.id);
     setSaving(false);
     if (error) { toast({ title: "Erro ao atualizar usuário", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Usuário atualizado!" });
@@ -355,9 +355,9 @@ export default function Admin() {
               <div><label style={lbl}>Senha inicial</label><input style={inp} type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="Mínimo 6 caracteres" minLength={6} /></div>
               <div>
                 <label style={lbl}>Perfil de acesso</label>
-                <select style={inp} value={role} onChange={e => setRole(e.target.value)}>
-                  <option value="colaborador">Colaborador</option>
-                  <option value="admin">Administrador</option>
+                <select style={inp} value={perfil} onChange={e => setPerfil(e.target.value)}>
+                  <option value="consultor">Consultor</option>
+                  <option value="administrador">Administrador</option>
                 </select>
               </div>
               <div style={{ gridColumn: "span 2", display: "flex", justifyContent: "flex-end", paddingTop: "4px" }}>
@@ -411,9 +411,9 @@ export default function Admin() {
                   {editando?.id === u.id ? (
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                       <input style={{ ...inp, width: "160px" }} value={editando.nome} onChange={e => setEditando({ ...editando, nome: e.target.value })} />
-                      <select style={{ ...inp, width: "150px" }} value={editando.role ?? "colaborador"} onChange={e => setEditando({ ...editando, role: e.target.value })}>
-                        <option value="colaborador">Colaborador</option>
-                        <option value="admin">Administrador</option>
+                      <select style={{ ...inp, width: "150px" }} value={editando.perfil ?? "consultor"} onChange={e => setEditando({ ...editando, perfil: e.target.value })}>
+                        <option value="consultor">Consultor</option>
+                        <option value="administrador">Administrador</option>
                       </select>
                       <button onClick={handleSalvarEdicao} disabled={saving} style={{ width: "30px", height: "30px", border: "1px solid #bbf7d0", borderRadius: "7px", background: "#f0fdf4", color: "#16a34a", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Check size={14} /></button>
                       <button onClick={() => setEditando(null)} style={{ width: "30px", height: "30px", border: "1px solid #e5e7eb", borderRadius: "7px", background: "#fff", color: "#9ca3af", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
@@ -427,7 +427,7 @@ export default function Admin() {
                           <div style={{ fontSize: "11px", color: "#9ca3af" }}>{u.email}</div>
                         </div>
                       </div>
-                      <div><span style={{ fontSize: "11px", padding: "3px 9px", borderRadius: "20px", fontWeight: 500, background: u.role === "admin" ? "#eff6ff" : "#f1f5f9", color: u.role === "admin" ? "#1d4ed8" : "#475569" }}>{u.role === "admin" ? "Administrador" : "Colaborador"}</span></div>
+                      <div><span style={{ fontSize: "11px", padding: "3px 9px", borderRadius: "20px", fontWeight: 500, background: u.perfil === "administrador" ? "#eff6ff" : "#f1f5f9", color: u.perfil === "administrador" ? "#1d4ed8" : "#475569" }}>{u.perfil === "administrador" ? "Administrador" : "Consultor"}</span></div>
                       <div><span style={{ fontSize: "11px", padding: "3px 9px", borderRadius: "20px", fontWeight: 500, background: u.ativo ? "#f0fdf4" : "#f9fafb", color: u.ativo ? "#16a34a" : "#6b7280" }}>{u.ativo ? "Ativo" : "Inativo"}</span></div>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <button onClick={() => setEditando(u)} title="Editar"
