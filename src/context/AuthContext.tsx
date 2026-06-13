@@ -6,6 +6,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  perfil: string | null;
   signOut: () => Promise<void>;
 }
 
@@ -15,17 +16,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [perfil, setPerfil] = useState<string | null>(null);
+
+  const fetchPerfil = async (userId: string | null) => {
+    if (!userId) { setPerfil(null); return; }
+    const { data } = await supabase.from("usuarios").select("perfil").eq("id", userId).single();
+    setPerfil(data?.perfil ?? null);
+  };
 
   useEffect(() => {
     // 1) Subscribe FIRST, then fetch session
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      fetchPerfil(newSession?.user?.id ?? null);
     });
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
+      fetchPerfil(data.session?.user?.id ?? null);
       setLoading(false);
     });
 
@@ -37,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, perfil, signOut }}>
       {children}
     </AuthContext.Provider>
   );

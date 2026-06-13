@@ -74,7 +74,7 @@ function NavItem({
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { user } = useAuth();
+  const { user, perfil } = useAuth();
   const navigate = useNavigate();
   const userEmail = user?.email ?? "";
   const emailInitials = userEmail
@@ -186,7 +186,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             Sistema
           </div>
 
-          <NavItem to="/admin" icon={<Settings size={15} />} label="Administração" />
+          {perfil === "administrador" && (
+            <NavItem to="/admin" icon={<Settings size={15} />} label="Administração" />
+          )}
         </div>
 
         {/* ── Footer: user pill ── */}
