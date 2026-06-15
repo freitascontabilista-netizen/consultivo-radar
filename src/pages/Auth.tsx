@@ -1,76 +1,128 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowRight, Shield, Cloud, RefreshCw, Lock, Mail } from "lucide-react";
+import { Loader2, ArrowRight, Shield, Cloud, RefreshCw, Mail } from "lucide-react";
 
-type Tela = "login" | "esqueci" | "codigo";
+type Tela = "email" | "otp";
 
 export default function Auth() {
   const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate  = useNavigate();
+  const location  = useLocation();
   const { toast } = useToast();
 
-  const [tela, setTela] = useState<Tela>("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [tela,         setTela]         = useState<Tela>("email");
+  const [email,        setEmail]        = useState("");
+  const [digits,       setDigits]       = useState<string[]>(Array(6).fill(""));
+  const [submitting,   setSubmitting]   = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
-  const [pwdFocused, setPwdFocused] = useState(false);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  useEffect(() => { document.title = "Entrar | Consultivo Radar"; }, []);
+
+  // auto-focus primeiro dígito ao entrar na tela OTP
   useEffect(() => {
-    document.title = "Entrar | Consultivo Radar";
-  }, []);
+    if (tela === "otp") setTimeout(() => otpRefs.current[0]?.focus(), 60);
+  }, [tela]);
 
-  if (!authLoading && user && tela === "login") {
+  if (!authLoading && user && tela === "email") {
     const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/";
     return <Navigate to={from} replace />;
   }
 
-  const handleLogin = async (e: FormEvent) => {
+  // ── OTP input handlers ────────────────────────────────────────────────────
+
+  function handleDigit(i: number, val: string) {
+    const d = val.replace(/\D/g, "").slice(-1);
+    const next = [...digits];
+    next[i] = d;
+    setDigits(next);
+    if (d && i < 5) otpRefs.current[i + 1]?.focus();
+  }
+
+  function handleKeyDown(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Backspace" && !digits[i] && i > 0) otpRefs.current[i - 1]?.focus();
+    if (e.key === "ArrowLeft"  && i > 0)  otpRefs.current[i - 1]?.focus();
+    if (e.key === "ArrowRight" && i < 5)  otpRefs.current[i + 1]?.focus();
+  }
+
+  function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const next   = Array(6).fill("");
+    for (let k = 0; k < pasted.length; k++) next[k] = pasted[k];
+    setDigits(next);
+    otpRefs.current[Math.min(pasted.length, 5)]?.focus();
+  }
+
+  // ── submit handlers ───────────────────────────────────────────────────────
+
+  const handleSendOtp = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
+    });
     setSubmitting(false);
     if (error) {
-      toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar código", description: error.message, variant: "destructive" });
+      return;
+    }
+    setDigits(Array(6).fill(""));
+    setTela("otp");
+  };
+
+  const handleVerifyOtp = async (e: FormEvent) => {
+    e.preventDefault();
+    const token = digits.join("");
+    if (token.length < 6) {
+      toast({ title: "Preencha os 6 dígitos do código.", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
+    setSubmitting(false);
+    if (error) {
+      toast({ title: "Código inválido ou expirado", description: error.message, variant: "destructive" });
       return;
     }
     navigate("/", { replace: true });
   };
 
-  const handleEsqueci = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleReenviar = async () => {
     setSubmitting(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/redefinir-senha`,
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
     });
     setSubmitting(false);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao reenviar", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "E-mail enviado!", description: "Verifique sua caixa de entrada e clique no link." });
-    setTela("codigo");
+    setDigits(Array(6).fill(""));
+    toast({ title: "Código reenviado!", description: "Verifique sua caixa de entrada." });
+    setTimeout(() => otpRefs.current[0]?.focus(), 60);
   };
 
+  // ── styles ────────────────────────────────────────────────────────────────
+
   const inputStyle = (focused: boolean): React.CSSProperties => ({
-    width: "100%",
-    height: "50px",
+    width: "100%", height: "50px",
     background: focused ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.05)",
     border: `1px solid ${focused ? "rgba(59,130,246,0.5)" : "rgba(255,255,255,0.10)"}`,
     boxShadow: focused ? "0 0 0 3px rgba(59,130,246,0.15)" : "none",
-    borderRadius: "12px",
-    padding: "0 16px 0 44px",
-    fontSize: "15px",
-    color: "#fff",
-    outline: "none",
+    borderRadius: "12px", padding: "0 16px 0 44px",
+    fontSize: "15px", color: "#fff", outline: "none",
     fontFamily: "inherit",
     transition: "border-color 0.15s, box-shadow 0.15s, background 0.15s",
     boxSizing: "border-box" as const,
   });
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -101,46 +153,38 @@ export default function Auth() {
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { overflow: hidden; }
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
           background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
           transform: translateY(-1px);
           box-shadow: 0 8px 28px rgba(37,99,235,0.5) !important;
         }
-        .btn-primary:active { transform: translateY(0); }
+        .btn-primary:active:not(:disabled) { transform: translateY(0); }
+        .otp-input:focus {
+          border-color: rgba(59,130,246,0.65) !important;
+          box-shadow: 0 0 0 3px rgba(59,130,246,0.18), 0 0 14px rgba(59,130,246,0.14) !important;
+          background: rgba(37,99,235,0.14) !important;
+        }
         @media (max-width: 960px) {
-          .auth-left { display: none !important; }
+          .auth-left  { display: none !important; }
           .auth-right { width: 100% !important; }
         }
       `}</style>
 
-      <div style={{
-        display: "flex",
-        height: "100vh",
-        width: "100vw",
-        overflow: "hidden",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        background: "#0B1628",
-      }}>
+      <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#0B1628" }}>
 
-        {/* ══════ LADO ESQUERDO ══════ */}
-        <div className="auth-left" style={{
-          flex: 1,
-          background: "linear-gradient(145deg, #0B1628 0%, #0F1E40 50%, #0B1E30 100%)",
-          position: "relative",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          padding: "44px 52px",
-        }}>
+        {/* ══════════════════════════════════════════════════
+            LADO ESQUERDO — design inalterado
+        ══════════════════════════════════════════════════ */}
+        <div className="auth-left" style={{ flex: 1, background: "linear-gradient(145deg,#0B1628 0%,#0F1E40 50%,#0B1E30 100%)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", padding: "44px 52px" }}>
 
-          {/* Elemento orbital decorativo */}
+          {/* Orbital decorativo */}
           <div style={{ position: "absolute", right: "-100px", top: "50%", transform: "translateY(-50%)", width: "500px", height: "500px", pointerEvents: "none" }}>
             <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid rgba(59,130,246,0.12)" }} />
             <div style={{ position: "absolute", inset: "40px", borderRadius: "50%", border: "1px solid rgba(59,130,246,0.10)" }} />
             <div style={{ position: "absolute", inset: "80px", borderRadius: "50%", border: "1px solid rgba(59,130,246,0.08)" }} />
             <div style={{ position: "absolute", inset: "120px", borderRadius: "50%", border: "1px solid rgba(59,130,246,0.15)" }} />
             <div style={{ position: "absolute", inset: "160px", borderRadius: "50%", border: "1px solid rgba(59,130,246,0.12)" }} />
-            <div style={{ position: "absolute", inset: "180px", borderRadius: "50%", background: "radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)" }} />
+            <div style={{ position: "absolute", inset: "180px", borderRadius: "50%", background: "radial-gradient(circle,rgba(59,130,246,0.18) 0%,transparent 70%)" }} />
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "12px", height: "12px", borderRadius: "50%", background: "#3B82F6", boxShadow: "0 0 20px rgba(59,130,246,0.6)" }} />
             <div style={{ position: "absolute", top: "50%", left: "50%", width: 0, height: 0 }}>
               <div style={{ position: "absolute", transform: "translateX(160px)", width: "8px", height: "8px", borderRadius: "50%", background: "#60A5FA", marginTop: "-4px", marginLeft: "-4px", boxShadow: "0 0 10px rgba(96,165,250,0.5)", animation: "orbit 8s linear infinite" }} />
@@ -153,14 +197,12 @@ export default function Auth() {
             </div>
           </div>
 
-          {/* Grid de pontos */}
-          <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "40px 40px", pointerEvents: "none" }} />
-          {/* Glow inferior esquerdo */}
-          <div style={{ position: "absolute", bottom: "-80px", left: "-80px", width: "350px", height: "350px", background: "radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px)", backgroundSize: "40px 40px", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: "-80px", left: "-80px", width: "350px", height: "350px", background: "radial-gradient(circle,rgba(59,130,246,0.12) 0%,transparent 70%)", pointerEvents: "none" }} />
 
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px", position: "relative", animation: "fadeUp 0.35s ease both", flexShrink: 0 }}>
-            <div style={{ width: "40px", height: "40px", background: "linear-gradient(135deg, #2563EB, #1D4ED8)", borderRadius: "11px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700, color: "#fff", boxShadow: "0 4px 16px rgba(37,99,235,0.5)" }}>F</div>
+            <div style={{ width: "40px", height: "40px", background: "linear-gradient(135deg,#2563EB,#1D4ED8)", borderRadius: "11px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700, color: "#fff", boxShadow: "0 4px 16px rgba(37,99,235,0.5)" }}>F</div>
             <span style={{ fontSize: "16px", fontWeight: 600, color: "#fff", letterSpacing: "-0.3px" }}>Consultivo Radar</span>
             <div style={{ marginLeft: "8px", display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(37,99,235,0.15)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: "20px", padding: "4px 12px", fontSize: "11px", color: "#60A5FA" }}>
               <span style={{ width: "6px", height: "6px", background: "#3B82F6", borderRadius: "50%", animation: "pulse-dot 2s ease infinite", display: "inline-block" }} />
@@ -170,28 +212,20 @@ export default function Auth() {
 
           {/* Centro */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", gap: "28px", maxWidth: "520px" }}>
-
-            {/* Eyebrow */}
             <div style={{ animation: "fadeUp 0.4s ease 0.06s both" }}>
               <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "2px", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", gap: "10px" }}>
                 <span style={{ width: "28px", height: "1px", background: "rgba(255,255,255,0.15)", display: "block" }} />
                 Para contadores consultores
               </span>
             </div>
-
-            {/* Headline */}
             <div style={{ animation: "fadeUp 0.4s ease 0.10s both" }}>
-              <h1 style={{ fontSize: "clamp(28px, 2.8vw, 44px)", fontWeight: 700, color: "#fff", lineHeight: 1.14, letterSpacing: "-1.2px", marginBottom: "16px" }}>
-                Seu cliente merece<br />
-                um contador que<br />
-                <span style={{ color: "#3B82F6" }}>está sempre presente.</span>
+              <h1 style={{ fontSize: "clamp(28px,2.8vw,44px)", fontWeight: 700, color: "#fff", lineHeight: 1.14, letterSpacing: "-1.2px", marginBottom: "16px" }}>
+                Seu cliente merece<br />um contador que<br /><span style={{ color: "#3B82F6" }}>está sempre presente.</span>
               </h1>
               <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.5)", lineHeight: 1.75, maxWidth: "400px" }}>
                 O Consultivo Radar mostra exatamente quando cada cliente precisa de você — antes que ele perceba que está sendo esquecido.
               </p>
             </div>
-
-            {/* Cards de destaque */}
             <div style={{ animation: "fadeUp 0.4s ease 0.16s both", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
               {[
                 { icon: "⏰", title: "Último contato", desc: "Saiba há quantos dias você não fala com cada cliente" },
@@ -205,8 +239,6 @@ export default function Auth() {
                 </div>
               ))}
             </div>
-
-            {/* Alerta */}
             <div style={{ animation: "fadeUp 0.4s ease 0.20s both" }}>
               <div style={{ background: "rgba(234,179,8,0.07)", border: "1px solid rgba(234,179,8,0.20)", borderLeft: "3px solid #EAB308", borderRadius: "10px", padding: "14px 18px" }}>
                 <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" as const, color: "#EAB308", marginBottom: "6px" }}>⚠ Atenção</div>
@@ -220,7 +252,7 @@ export default function Auth() {
           <div style={{ display: "flex", position: "relative", animation: "fadeUp 0.4s ease 0.26s both", flexShrink: 0, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px", overflow: "hidden" }}>
             {[
               { v: "100%", l: "Clientes acompanhados" },
-              { v: "0", l: "Perdas registradas" },
+              { v: "0",    l: "Perdas registradas" },
               { v: "24/7", l: "Acesso ao radar" },
             ].map((s, i) => (
               <div key={s.l} style={{ flex: 1, padding: "16px 20px", textAlign: "center" as const, borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.07)" : "none" }}>
@@ -231,24 +263,15 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* ══════ LADO DIREITO ══════ */}
-        <div className="auth-right" style={{
-          width: "480px",
-          flexShrink: 0,
-          background: "#111E38",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          padding: "56px 48px",
-          borderLeft: "1px solid rgba(255,255,255,0.06)",
-          position: "relative",
-          overflow: "hidden",
-        }}>
-          {/* Glows decorativos */}
-          <div style={{ position: "absolute", top: "-60px", right: "-60px", width: "200px", height: "200px", borderRadius: "50%", background: "radial-gradient(circle, rgba(37,99,235,0.15) 0%, transparent 70%)", pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: "-40px", left: "-40px", width: "150px", height: "150px", borderRadius: "50%", background: "radial-gradient(circle, rgba(59,130,246,0.10) 0%, transparent 70%)", pointerEvents: "none" }} />
+        {/* ══════════════════════════════════════════════════
+            LADO DIREITO — Magic Link / OTP
+        ══════════════════════════════════════════════════ */}
+        <div className="auth-right" style={{ width: "480px", flexShrink: 0, background: "#111E38", display: "flex", flexDirection: "column", justifyContent: "center", padding: "56px 48px", borderLeft: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: "-60px", right: "-60px", width: "200px", height: "200px", borderRadius: "50%", background: "radial-gradient(circle,rgba(37,99,235,0.15) 0%,transparent 70%)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: "-40px", left: "-40px", width: "150px", height: "150px", borderRadius: "50%", background: "radial-gradient(circle,rgba(59,130,246,0.10) 0%,transparent 70%)", pointerEvents: "none" }} />
 
-          {tela === "login" && (
+          {/* ── TELA 1: digitar e-mail ── */}
+          {tela === "email" && (
             <div style={{ position: "relative", animation: "fadeUp 0.4s ease both" }}>
               <div style={{ marginBottom: "32px" }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(37,99,235,0.15)", border: "1px solid rgba(59,130,246,0.20)", borderRadius: "20px", padding: "4px 12px", fontSize: "11px", color: "#60A5FA", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, marginBottom: "16px" }}>
@@ -256,12 +279,12 @@ export default function Auth() {
                   Acesso seguro
                 </div>
                 <h2 style={{ fontSize: "28px", fontWeight: 700, color: "#fff", letterSpacing: "-0.6px", marginBottom: "6px" }}>Entre na sua conta</h2>
-                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.38)" }}>Bem-vindo de volta ao Consultivo Radar</p>
+                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.38)" }}>Enviaremos um código de 6 dígitos para o seu e-mail.</p>
               </div>
 
               <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", marginBottom: "28px" }} />
 
-              <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+              <form onSubmit={handleSendOtp} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.8px", textTransform: "uppercase" as const, marginBottom: "8px" }}>E-mail</label>
                   <div style={{ position: "relative" }}>
@@ -279,52 +302,28 @@ export default function Auth() {
                   </div>
                 </div>
 
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                    <label style={{ fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.8px", textTransform: "uppercase" as const }}>Senha</label>
-                    <button type="button" onClick={() => setTela("esqueci")} style={{ fontSize: "12px", color: "#60A5FA", background: "none", border: "none", cursor: "pointer", fontWeight: 500, padding: 0 }}>
-                      Esqueci minha senha
-                    </button>
-                  </div>
-                  <div style={{ position: "relative" }}>
-                    <Lock size={15} style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: pwdFocused ? "#60A5FA" : "rgba(255,255,255,0.25)", transition: "color 0.15s" }} />
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      onFocus={() => setPwdFocused(true)}
-                      onBlur={() => setPwdFocused(false)}
-                      placeholder="••••••••••••"
-                      style={inputStyle(pwdFocused)}
-                    />
-                  </div>
-                </div>
-
                 <button
                   type="submit"
                   disabled={submitting}
                   className="btn-primary"
-                  style={{ width: "100%", height: "52px", background: "linear-gradient(135deg, #2563EB, #1D4ED8)", border: "none", borderRadius: "12px", fontSize: "15px", fontWeight: 700, color: "#fff", cursor: submitting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "6px", boxShadow: "0 4px 24px rgba(37,99,235,0.4)", transition: "all 0.2s ease", opacity: submitting ? 0.7 : 1 }}
+                  style={{ width: "100%", height: "52px", background: "linear-gradient(135deg,#2563EB,#1D4ED8)", border: "none", borderRadius: "12px", fontSize: "15px", fontWeight: 700, color: "#fff", cursor: submitting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", boxShadow: "0 4px 24px rgba(37,99,235,0.4)", transition: "all 0.2s ease", opacity: submitting ? 0.7 : 1 }}
                 >
                   {submitting
-                    ? <><Loader2 size={17} style={{ animation: "spin-loader 1s linear infinite" }} /> Entrando...</>
-                    : <><ArrowRight size={17} /> Entrar no sistema</>
+                    ? <><Loader2 size={17} style={{ animation: "spin-loader 1s linear infinite" }} />Enviando...</>
+                    : <><Mail size={17} />Enviar código de acesso</>
                   }
                 </button>
               </form>
 
-              <div style={{ marginTop: "28px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "12px", color: "rgba(255,255,255,0.2)", marginBottom: "18px" }}>
-                  <Lock size={11} /> Conexão segura · SSL · Dados criptografados
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+              {/* Trust badges */}
+              <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px" }}>
                   {[
-                    { icon: Shield, label: "Dados seguros" },
-                    { icon: Cloud, label: "Cloud hospedado" },
+                    { icon: Shield,    label: "Dados seguros" },
+                    { icon: Cloud,     label: "Cloud hospedado" },
                     { icon: RefreshCw, label: "Sempre atualizado" },
                   ].map(({ icon: Icon, label }) => (
-                    <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", fontSize: "11px", color: "rgba(255,255,255,0.25)", textAlign: "center" }}>
+                    <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", fontSize: "11px", color: "rgba(255,255,255,0.25)", textAlign: "center" as const }}>
                       <div style={{ width: "34px", height: "34px", background: "rgba(37,99,235,0.12)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <Icon size={15} style={{ color: "#3B82F6" }} />
                       </div>
@@ -336,40 +335,110 @@ export default function Auth() {
             </div>
           )}
 
-          {tela === "esqueci" && (
+          {/* ── TELA 2: verificar código OTP ── */}
+          {tela === "otp" && (
             <div style={{ position: "relative", animation: "fadeUp 0.4s ease both" }}>
-              <button onClick={() => setTela("login")} style={{ background: "none", border: "none", color: "#60A5FA", fontSize: "13px", cursor: "pointer", marginBottom: "28px", padding: 0, display: "flex", alignItems: "center", gap: "6px", fontWeight: 500 }}>
-                ← Voltar ao login
-              </button>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(37,99,235,0.15)", border: "1px solid rgba(59,130,246,0.20)", borderRadius: "20px", padding: "4px 12px", fontSize: "11px", color: "#60A5FA", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, marginBottom: "16px" }}>
-                Recuperar acesso
-              </div>
-              <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#fff", letterSpacing: "-0.5px", marginBottom: "6px" }}>Esqueceu sua senha?</h2>
-              <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.38)", marginBottom: "28px" }}>Informe seu e-mail para receber o link de redefinição.</p>
-              <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", marginBottom: "28px" }} />
-              <form onSubmit={handleEsqueci} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.8px", textTransform: "uppercase" as const, marginBottom: "8px" }}>E-mail</label>
-                  <div style={{ position: "relative" }}>
-                    <Mail size={15} style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.25)" }} />
-                    <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" style={inputStyle(false)} />
-                  </div>
+
+              {/* Ícone */}
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+                <div style={{ width: "68px", height: "68px", background: "rgba(37,99,235,0.15)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px" }}>
+                  📬
                 </div>
-                <button type="submit" disabled={submitting} className="btn-primary" style={{ width: "100%", height: "52px", background: "linear-gradient(135deg, #2563EB, #1D4ED8)", border: "none", borderRadius: "12px", fontSize: "15px", fontWeight: 700, color: "#fff", cursor: submitting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", boxShadow: "0 4px 24px rgba(37,99,235,0.4)", transition: "all 0.2s ease", opacity: submitting ? 0.7 : 1 }}>
-                  {submitting ? <><Loader2 size={17} style={{ animation: "spin-loader 1s linear infinite" }} /> Enviando...</> : <><ArrowRight size={17} /> Enviar link de recuperação</>}
+              </div>
+
+              {/* Título */}
+              <div style={{ textAlign: "center", marginBottom: "22px" }}>
+                <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#fff", letterSpacing: "-0.5px", marginBottom: "10px" }}>Verifique seu e-mail</h2>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", lineHeight: 1.6, marginBottom: "10px" }}>
+                  Enviamos um código de 6 dígitos para
+                </p>
+                <div style={{ display: "inline-block", background: "rgba(37,99,235,0.15)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: "8px", padding: "6px 16px", fontSize: "13px", fontWeight: 700, color: "#60A5FA", wordBreak: "break-all" }}>
+                  {email}
+                </div>
+              </div>
+
+              <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", marginBottom: "22px" }} />
+
+              <form onSubmit={handleVerifyOtp}>
+                {/* 6 inputs OTP */}
+                <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "22px" }}>
+                  {digits.map((d, i) => (
+                    <input
+                      key={i}
+                      ref={el => { otpRefs.current[i] = el; }}
+                      className="otp-input"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete={i === 0 ? "one-time-code" : "off"}
+                      maxLength={1}
+                      value={d}
+                      onChange={e => handleDigit(i, e.target.value)}
+                      onKeyDown={e => handleKeyDown(i, e)}
+                      onPaste={handlePaste}
+                      style={{
+                        width: "52px",
+                        height: "60px",
+                        background: d ? "rgba(37,99,235,0.14)" : "rgba(255,255,255,0.05)",
+                        border: `1.5px solid ${d ? "rgba(59,130,246,0.5)" : "rgba(255,255,255,0.10)"}`,
+                        borderRadius: "12px",
+                        fontSize: "26px",
+                        fontWeight: 700,
+                        color: "#fff",
+                        textAlign: "center" as const,
+                        outline: "none",
+                        transition: "all 0.15s",
+                        caretColor: "transparent",
+                        fontFamily: "'Courier New', monospace",
+                        flexShrink: 0,
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Botão Entrar */}
+                <button
+                  type="submit"
+                  disabled={submitting || digits.join("").length < 6}
+                  className="btn-primary"
+                  style={{
+                    width: "100%", height: "52px",
+                    background: digits.join("").length === 6
+                      ? "linear-gradient(135deg,#2563EB,#1D4ED8)"
+                      : "rgba(37,99,235,0.25)",
+                    border: "none", borderRadius: "12px",
+                    fontSize: "15px", fontWeight: 700, color: "#fff",
+                    cursor: submitting || digits.join("").length < 6 ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
+                    boxShadow: digits.join("").length === 6 ? "0 4px 24px rgba(37,99,235,0.4)" : "none",
+                    transition: "all 0.2s ease",
+                    opacity: submitting ? 0.7 : 1,
+                  }}
+                >
+                  {submitting
+                    ? <><Loader2 size={17} style={{ animation: "spin-loader 1s linear infinite" }} />Verificando...</>
+                    : <>Entrar <ArrowRight size={17} /></>
+                  }
                 </button>
               </form>
-            </div>
-          )}
 
-          {tela === "codigo" && (
-            <div style={{ position: "relative", animation: "fadeUp 0.4s ease both", textAlign: "center" }}>
-              <div style={{ width: "68px", height: "68px", background: "rgba(37,99,235,0.15)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: "30px" }}>📬</div>
-              <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#fff", marginBottom: "10px" }}>E-mail enviado!</h2>
-              <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.38)", marginBottom: "28px", lineHeight: 1.65 }}>Verifique sua caixa de entrada e clique no link para redefinir sua senha.</p>
-              <button onClick={() => setTela("login")} className="btn-primary" style={{ width: "100%", height: "52px", background: "linear-gradient(135deg, #2563EB, #1D4ED8)", border: "none", borderRadius: "12px", fontSize: "15px", fontWeight: 700, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", boxShadow: "0 4px 24px rgba(37,99,235,0.4)", transition: "all 0.2s ease" }}>
-                <ArrowRight size={17} /> Voltar ao login
-              </button>
+              {/* Links secundários */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px", paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                <button
+                  onClick={() => { setTela("email"); setDigits(Array(6).fill("")); }}
+                  disabled={submitting}
+                  style={{ background: "none", border: "none", color: "#60A5FA", fontSize: "13px", cursor: "pointer", fontWeight: 500, padding: 0, display: "flex", alignItems: "center", gap: "5px", opacity: submitting ? 0.5 : 1, transition: "opacity 0.15s" }}
+                >
+                  ← Alterar e-mail
+                </button>
+                <button
+                  onClick={handleReenviar}
+                  disabled={submitting}
+                  style={{ background: "none", border: "none", color: "#60A5FA", fontSize: "13px", cursor: "pointer", fontWeight: 500, padding: 0, display: "flex", alignItems: "center", gap: "5px", opacity: submitting ? 0.5 : 1, transition: "opacity 0.15s" }}
+                >
+                  <RefreshCw size={12} style={{ animation: submitting ? "spin-loader 1s linear infinite" : "none" }} />
+                  Reenviar
+                </button>
+              </div>
             </div>
           )}
         </div>
