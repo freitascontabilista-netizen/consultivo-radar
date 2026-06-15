@@ -115,6 +115,8 @@ export default function Admin() {
   const [loadingLog, setLoadingLog] = useState(false);
   const [filtroUser, setFiltroUser] = useState("");
   const [filtroDias, setFiltroDias] = useState(7);
+  const [logPage, setLogPage] = useState(0);
+  const LOG_PAGE_SIZE = 10;
 
   // Metas
   const [metas, setMetas] = useState<Meta[]>([]);
@@ -158,6 +160,7 @@ export default function Admin() {
     }
     const { data } = await query;
     setLogs((data ?? []) as ActivityLog[]);
+    setLogPage(0);
     setLoadingLog(false);
   }, [filtroUser, filtroDias]);
 
@@ -479,6 +482,7 @@ export default function Admin() {
                 <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </div>
               <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#111827", margin: 0 }}>Log de atividades</h3>
+              {!loadingLog && <span style={{ fontSize: "11px", fontWeight: 600, background: "#f1f5f9", color: "#6b7280", borderRadius: "20px", padding: "2px 9px" }}>{logs.length} registro{logs.length !== 1 ? "s" : ""}</span>}
             </div>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               <select value={filtroUser} onChange={e => setFiltroUser(e.target.value)} style={{ fontSize: "12px", color: "#374151", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "7px", padding: "6px 10px", outline: "none" }}>
@@ -496,27 +500,49 @@ export default function Admin() {
               </button>
             </div>
           </div>
+          {!loadingLog && logs.length > 0 && (
+            <div style={{ padding: "6px 20px", borderBottom: "1px solid #f3f4f6", fontSize: "11px", color: "#9ca3af" }}>
+              {logPage * LOG_PAGE_SIZE + 1}–{Math.min((logPage + 1) * LOG_PAGE_SIZE, logs.length)} de {logs.length} atividade{logs.length !== 1 ? "s" : ""}
+            </div>
+          )}
           {loadingLog ? (
             <div style={{ padding: "48px", textAlign: "center", color: "#9ca3af", fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><Loader2 size={16} className="animate-spin" /> Carregando logs...</div>
           ) : logs.length === 0 ? (
             <div style={{ padding: "48px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>Nenhuma atividade no período.</div>
           ) : (
-            logs.map((l, idx) => (
-              <div key={l.id} style={{ display: "flex", gap: "14px", padding: "13px 20px", borderBottom: idx < logs.length - 1 ? "1px solid #f9fafb" : "none", alignItems: "flex-start" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#1d4ed8", flexShrink: 0 }}>
-                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <>
+              {logs.slice(logPage * LOG_PAGE_SIZE, (logPage + 1) * LOG_PAGE_SIZE).map((l, idx, arr) => (
+                <div key={l.id} style={{ display: "flex", gap: "14px", padding: "13px 20px", borderBottom: idx < arr.length - 1 ? "1px solid #f9fafb" : "none", alignItems: "flex-start" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#1d4ed8", flexShrink: 0 }}>
+                    <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "13px", color: "#111827" }}><span style={{ fontWeight: 600 }}>{l.usuario_nome}</span><span style={{ color: "#6b7280" }}> — {l.acao}</span></div>
+                    {l.entidade && <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "1px" }}>Entidade: {l.entidade}</div>}
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#9ca3af", flexShrink: 0, textAlign: "right" }}>
+                    {new Date(l.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "13px", color: "#111827" }}><span style={{ fontWeight: 600 }}>{l.usuario_nome}</span><span style={{ color: "#6b7280" }}> — {l.acao}</span></div>
-                  {l.entidade && <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "1px" }}>Entidade: {l.entidade}</div>}
+              ))}
+              {logs.length > LOG_PAGE_SIZE && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderTop: "1px solid #f3f4f6" }}>
+                  <button onClick={() => setLogPage(p => Math.max(0, p - 1))} disabled={logPage === 0}
+                    style={{ display: "flex", alignItems: "center", gap: "5px", padding: "6px 14px", fontSize: "12px", fontWeight: 500, color: logPage === 0 ? "#d1d5db" : "#374151", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "7px", cursor: logPage === 0 ? "default" : "pointer" }}>
+                    ← Anterior
+                  </button>
+                  <span style={{ fontSize: "12px", color: "#9ca3af" }}>
+                    Página {logPage + 1} de {Math.ceil(logs.length / LOG_PAGE_SIZE)}
+                  </span>
+                  <button onClick={() => setLogPage(p => Math.min(Math.ceil(logs.length / LOG_PAGE_SIZE) - 1, p + 1))} disabled={(logPage + 1) * LOG_PAGE_SIZE >= logs.length}
+                    style={{ display: "flex", alignItems: "center", gap: "5px", padding: "6px 14px", fontSize: "12px", fontWeight: 500, color: (logPage + 1) * LOG_PAGE_SIZE >= logs.length ? "#d1d5db" : "#374151", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "7px", cursor: (logPage + 1) * LOG_PAGE_SIZE >= logs.length ? "default" : "pointer" }}>
+                    Próxima →
+                  </button>
                 </div>
-                <div style={{ fontSize: "11px", color: "#9ca3af", flexShrink: 0, textAlign: "right" }}>
-                  {new Date(l.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                </div>
-              </div>
-            ))
+              )}
+            </>
           )}
         </div>
       )}
