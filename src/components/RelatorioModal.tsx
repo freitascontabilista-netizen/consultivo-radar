@@ -101,6 +101,39 @@ export function RelatorioModal({ open, onOpenChange, cliente, interacoes, acoes 
   const periodo  = `${fmt(dateStart + "T12:00:00")} a ${fmt(dateEnd + "T12:00:00")}`;
   const canaisUsados = [...new Set(filtered.map(i => i.canal).filter(Boolean))].join(", ") || "—";
 
+  // Dados para textos dinâmicos
+  const tipoContagem = filtered.reduce<Record<string, number>>((acc, i) => {
+    const t = i.tipo ?? "outros"; acc[t] = (acc[t] ?? 0) + 1; return acc;
+  }, {});
+  const tipoTop = Object.entries(tipoContagem).sort((a, b) => b[1] - a[1])[0];
+
+  const canalContagem = filtered.reduce<Record<string, number>>((acc, i) => {
+    const c = i.canal ?? ""; if (c) { acc[c] = (acc[c] ?? 0) + 1; } return acc;
+  }, {});
+  const canalTop = Object.entries(canalContagem).sort((a, b) => b[1] - a[1])[0];
+
+  const temasAcoes = acoes.slice(0, 3).map(a => a.tema).filter(Boolean).join(", ");
+
+  const textoObjetivo = `Este documento apresenta o histórico consultivo de ${nomeCliente} referente ao período de ${periodo}. Elaborado pela Freitas Consultoria Contábil e Financeira, reúne as orientações prestadas, os canais de comunicação utilizados, os temas abordados e as ações em andamento, com o objetivo de demonstrar o trabalho realizado e subsidiar as decisões estratégicas do empresário.`;
+
+  const textoNarrativo = (() => {
+    const p: string[] = [];
+    p.push(`No período de ${periodo}, foram realizadas ${filtered.length} orientação${filtered.length !== 1 ? "ões" : ""} consultiva${filtered.length !== 1 ? "s" : ""} para ${nomeCliente}.`);
+    if (filtered.length > 0 && tipoTop) {
+      const label = TIPO_MAP[tipoTop[0]]?.label ?? tipoTop[0];
+      let frase = `O tipo de orientação mais frequente foi ${label} (${tipoTop[1]} ocorrência${tipoTop[1] !== 1 ? "s" : ""})`;
+      frase += canalTop ? `, com utilização predominante do canal ${canalTop[0]} (${canalTop[1]} contato${canalTop[1] !== 1 ? "s" : ""}).` : ".";
+      p.push(frase);
+    }
+    if (acoes.length > 0) {
+      p.push(`Há ${acoes.length} ação${acoes.length !== 1 ? "ões" : ""} consultiva${acoes.length !== 1 ? "s" : ""} em aberto${temasAcoes ? `, com destaque para os temas: ${temasAcoes}` : ""}.`);
+    } else {
+      p.push("Não há ações consultivas abertas no momento.");
+    }
+    p.push("Este relatório consolida o comprometimento da Freitas Consultoria Contábil e Financeira com a entrega de valor, a transparência no relacionamento e a excelência no serviço prestado.");
+    return p.join(" ");
+  })();
+
   // ── PDF ──────────────────────────────────────────────────────────────────────
 
   const generatePDF = async () => {
@@ -277,6 +310,12 @@ export function RelatorioModal({ open, onOpenChange, cliente, interacoes, acoes 
               spacing: { after: 320 },
             }),
             sep,
+            heading("Objetivo do Relatório"),
+            new Paragraph({
+              children: [new TextRun({ text: textoObjetivo, size: 22, color: "374151" })],
+              spacing: { after: 200 },
+            }),
+            sep,
             heading("Dados do Cliente"),
             clienteTable,
             sep,
@@ -292,6 +331,13 @@ export function RelatorioModal({ open, onOpenChange, cliente, interacoes, acoes 
             ...(acoes.length > 0 ? acoesParags : [
               new Paragraph({ children: [new TextRun({ text: "Nenhuma ação consultiva aberta.", color: "9CA3AF", size: 20 })] })
             ]),
+            sep,
+            heading("Análise Consolidada do Período"),
+            new Paragraph({
+              children: [new TextRun({ text: textoNarrativo, size: 22, color: "1E3A5F", italics: true })],
+              spacing: { after: 200 },
+              shading: { type: ShadingType.SOLID, color: "EFF6FF", fill: "EFF6FF" },
+            }),
             sep,
             new Paragraph({
               children: [new TextRun({ text: "Freitas Consultoria Contábil e Financeira  •  freitas.contabilista@gmail.com", size: 18, color: "9CA3AF" })],
@@ -352,6 +398,14 @@ export function RelatorioModal({ open, onOpenChange, cliente, interacoes, acoes 
 
         {/* LINHA DOURADA */}
         <div style={{ height: "3px", background: "linear-gradient(90deg, #D4AF37, #F59E0B, transparent)", borderRadius: "2px", marginBottom: "36px" }} />
+
+        {/* OBJETIVO DO RELATÓRIO */}
+        <div style={{ marginBottom: "36px" }}>
+          <div style={{ fontSize: "10px", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>Objetivo do Relatório</div>
+          <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderLeft: "4px solid #1D4ED8", borderRadius: "0 10px 10px 0", padding: "18px 22px" }}>
+            <p style={{ fontSize: "13px", color: "#374151", lineHeight: 1.8, margin: 0 }}>{textoObjetivo}</p>
+          </div>
+        </div>
 
         {/* DADOS DO CLIENTE */}
         <div style={{ marginBottom: "36px" }}>
@@ -476,6 +530,15 @@ export function RelatorioModal({ open, onOpenChange, cliente, interacoes, acoes 
             })}
           </div>
         )}
+
+        {/* ANÁLISE CONSOLIDADA DO PERÍODO */}
+        <div style={{ marginBottom: "36px" }}>
+          <div style={{ height: "2px", background: "linear-gradient(90deg, #D4AF37, transparent)", marginBottom: "32px" }} />
+          <div style={{ fontSize: "10px", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "14px" }}>Análise Consolidada do Período</div>
+          <div style={{ background: "linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%)", border: "1px solid #BFDBFE", borderRadius: "10px", padding: "22px 26px" }}>
+            <p style={{ fontSize: "13px", color: "#1E3A5F", lineHeight: 1.9, margin: 0, fontStyle: "italic" }}>{textoNarrativo}</p>
+          </div>
+        </div>
 
         {/* RODAPÉ */}
         <div style={{ borderTop: "2px solid #E5E7EB", paddingTop: "24px", paddingBottom: "40px", marginTop: "8px" }}>
