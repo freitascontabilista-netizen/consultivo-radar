@@ -133,13 +133,24 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
         urgencia: "media",
       });
     }
-    console.log("[debug] interacoes inserida, tentando activity_logs...");
-    await supabase.from("activity_logs").insert({
-      usuario_nome: "Tiago",
-      acao: `Nova orientação: ${assunto}`,
-      entidade: "interacao",
+    console.log("[debug] tentando activity_logs via fetch...");
+    const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL as string;
+    const supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const logRes = await fetch(`${supabaseUrl}/rest/v1/activity_logs`, {
+      method: "POST",
+      headers: {
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+      },
+      body: JSON.stringify({
+        usuario_nome: "Tiago",
+        acao: `Nova orientação: ${assunto}`,
+        entidade: "interacao",
+      }),
     });
-    console.log("Log inserido");
+    console.log("Log status:", logRes.status, logRes.ok ? "OK" : await logRes.text());
     toast({ title: "Orientação registrada com sucesso!" });
     reset();
     onOpenChange(false);
