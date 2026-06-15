@@ -13,6 +13,7 @@ import Admin from "./pages/Admin.tsx";
 import Clientes from "./pages/Clientes.tsx";
 import Orientacoes from "./pages/Orientacoes.tsx";
 import Followups from "./pages/Followups.tsx";
+import Relatorios from "./pages/Relatorios.tsx";
 import Agenda from "./pages/Agenda.tsx";
 import RedefinirSenha from "./pages/RedefinirSenha.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/clientes" element={<ProtectedLayout><Clientes /></ProtectedLayout>} />
             <Route path="/orientacoes" element={<ProtectedLayout><Orientacoes /></ProtectedLayout>} />
             <Route path="/followups" element={<ProtectedLayout><Followups /></ProtectedLayout>} />
+            <Route path="/relatorios" element={<ProtectedLayout><Relatorios /></ProtectedLayout>} />
             <Route path="/agenda" element={<ProtectedLayout><Agenda /></ProtectedLayout>} />
             <Route path="/admin" element={<ProtectedLayout><Admin /></ProtectedLayout>} />
             <Route path="*" element={<NotFound />} />
