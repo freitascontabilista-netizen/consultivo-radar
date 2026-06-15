@@ -1,3 +1,4 @@
+// Modal para registrar nova orientação consultiva
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
