@@ -11,7 +11,8 @@ import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { RegistrarOrientacaoModal } from "@/components/RegistrarOrientacaoModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Pencil, X, Trash2, Calendar, Clock, AlertCircle, CheckCircle2, Tag, MapPin, Building2, StickyNote, Zap, Target, AlertTriangle, Loader2 } from "lucide-react";
+import { Pencil, X, Trash2, Calendar, Clock, AlertCircle, CheckCircle2, Tag, MapPin, Building2, StickyNote, Zap, Target, AlertTriangle, Loader2, FileDown } from "lucide-react";
+import { RelatorioModal } from "@/components/RelatorioModal";
 
 const tipoConfig: Record<string, { label: string; bg: string; color: string }> = {
   consultiva:     { label: "Consultiva",     bg: "#dbeafe", color: "#1d4ed8" },
@@ -77,6 +78,7 @@ export default function RadarCliente() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [relatorioOpen, setRelatorioOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -302,12 +304,20 @@ export default function RadarCliente() {
                         <p style={{ fontSize: "13px", color: "#9ca3af", margin: "3px 0 0" }}>{cliente.nome_fantasia}</p>
                       )}
                     </div>
-                    <button onClick={openEdit}
-                      style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 16px", fontSize: "12px", fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(29,78,216,.3)", flexShrink: 0 }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#1e40af"}
-                      onMouseLeave={e => e.currentTarget.style.background = "#1d4ed8"}>
-                      <Pencil size={12} /> Editar cadastro
-                    </button>
+                    <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                      <button onClick={() => setRelatorioOpen(true)}
+                        style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#fff", color: "#1d4ed8", border: "1.5px solid #bfdbfe", borderRadius: "8px", padding: "8px 16px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "#eff6ff"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "#fff"; }}>
+                        <FileDown size={12} /> Gerar Relatório
+                      </button>
+                      <button onClick={openEdit}
+                        style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 16px", fontSize: "12px", fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(29,78,216,.3)" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#1e40af"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#1d4ed8"}>
+                        <Pencil size={12} /> Editar cadastro
+                      </button>
+                    </div>
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
                     <StatusBadge status={cliente.semaforo} />
@@ -576,6 +586,14 @@ export default function RadarCliente() {
       </button>
 
       <RegistrarOrientacaoModal open={modalOpen} onOpenChange={setModalOpen} clienteId={clienteId} onSaved={load} />
+
+      <RelatorioModal
+        open={relatorioOpen}
+        onOpenChange={setRelatorioOpen}
+        cliente={cliente}
+        interacoes={interacoes}
+        acoes={acoes}
+      />
 
       {/* Edit modal */}
       {editOpen && (
