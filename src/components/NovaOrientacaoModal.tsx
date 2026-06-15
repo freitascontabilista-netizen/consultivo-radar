@@ -132,6 +132,13 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
         urgencia: "media",
       });
     }
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("activity_logs").insert({
+      usuario_id: user?.id ?? null,
+      usuario_nome: user?.email ?? "Sistema",
+      acao: `Nova orientação registrada: ${assunto}`,
+      entidade: "interacao",
+    });
     toast({ title: "Orientação registrada com sucesso!" });
     reset();
     onOpenChange(false);

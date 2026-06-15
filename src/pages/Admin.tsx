@@ -210,6 +210,13 @@ export default function Admin() {
       setSaving(false);
       return;
     }
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("activity_logs").insert({
+      usuario_id: user?.id ?? null,
+      usuario_nome: user?.email ?? "Admin",
+      acao: `Usuário criado: ${nome} (${email})`,
+      entidade: "usuario",
+    });
     toast({ title: "Usuário criado com sucesso!" });
     setNome(""); setEmail(""); setSenha(""); setPerfil("consultor");
     setSaving(false);
@@ -237,6 +244,13 @@ export default function Admin() {
     const { error } = await supabase.from("usuarios").update({ nome: editando.nome, perfil: editando.perfil }).eq("id", editando.id);
     setSaving(false);
     if (error) { toast({ title: "Erro ao atualizar usuário", description: error.message, variant: "destructive" }); return; }
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("activity_logs").insert({
+      usuario_id: user?.id ?? null,
+      usuario_nome: user?.email ?? "Admin",
+      acao: `Usuário editado: ${editando?.nome}`,
+      entidade: "usuario",
+    });
     toast({ title: "Usuário atualizado!" });
     setEditando(null);
     load();
