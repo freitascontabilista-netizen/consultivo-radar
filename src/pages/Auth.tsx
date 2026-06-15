@@ -112,11 +112,11 @@ export default function Auth() {
 
   const inputStyle = (focused: boolean): React.CSSProperties => ({
     width: "100%", height: "50px",
-    background: focused ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.05)",
-    border: `1px solid ${focused ? "rgba(59,130,246,0.5)" : "rgba(255,255,255,0.10)"}`,
-    boxShadow: focused ? "0 0 0 3px rgba(59,130,246,0.15)" : "none",
+    background: focused ? "#fff" : "#f9fafb",
+    border: `1px solid ${focused ? "#3b82f6" : "#e5e7eb"}`,
+    boxShadow: focused ? "0 0 0 3px rgba(59,130,246,0.12)" : "none",
     borderRadius: "12px", padding: "0 16px 0 44px",
-    fontSize: "15px", color: "#fff", outline: "none",
+    fontSize: "15px", color: "#111827", outline: "none",
     fontFamily: "inherit",
     transition: "border-color 0.15s, box-shadow 0.15s, background 0.15s",
     boxSizing: "border-box" as const,
@@ -160,10 +160,11 @@ export default function Auth() {
         }
         .btn-primary:active:not(:disabled) { transform: translateY(0); }
         .otp-input:focus {
-          border-color: rgba(59,130,246,0.65) !important;
-          box-shadow: 0 0 0 3px rgba(59,130,246,0.18), 0 0 14px rgba(59,130,246,0.14) !important;
-          background: rgba(37,99,235,0.14) !important;
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 0 3px rgba(59,130,246,0.14) !important;
+          background: #fff !important;
         }
+        .auth-right input::placeholder { color: #9ca3af; }
         @media (max-width: 960px) {
           .auth-left  { display: none !important; }
           .auth-right { width: 100% !important; }
@@ -266,29 +267,27 @@ export default function Auth() {
         {/* ══════════════════════════════════════════════════
             LADO DIREITO — Magic Link / OTP
         ══════════════════════════════════════════════════ */}
-        <div className="auth-right" style={{ width: "480px", flexShrink: 0, background: "#111E38", display: "flex", flexDirection: "column", justifyContent: "center", padding: "56px 48px", borderLeft: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: "-60px", right: "-60px", width: "200px", height: "200px", borderRadius: "50%", background: "radial-gradient(circle,rgba(37,99,235,0.15) 0%,transparent 70%)", pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: "-40px", left: "-40px", width: "150px", height: "150px", borderRadius: "50%", background: "radial-gradient(circle,rgba(59,130,246,0.10) 0%,transparent 70%)", pointerEvents: "none" }} />
+        <div className="auth-right" style={{ width: "480px", flexShrink: 0, background: "#ffffff", display: "flex", flexDirection: "column", justifyContent: "center", padding: "56px 48px", borderLeft: "1px solid #e5e7eb", position: "relative", overflow: "hidden" }}>
 
           {/* ── TELA 1: digitar e-mail ── */}
           {tela === "email" && (
             <div style={{ position: "relative", animation: "fadeUp 0.4s ease both" }}>
               <div style={{ marginBottom: "32px" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(37,99,235,0.15)", border: "1px solid rgba(59,130,246,0.20)", borderRadius: "20px", padding: "4px 12px", fontSize: "11px", color: "#60A5FA", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, marginBottom: "16px" }}>
-                  <span style={{ width: "5px", height: "5px", background: "#3B82F6", borderRadius: "50%", display: "inline-block" }} />
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "20px", padding: "4px 12px", fontSize: "11px", color: "#1d4ed8", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, marginBottom: "16px" }}>
+                  <span style={{ width: "5px", height: "5px", background: "#1d4ed8", borderRadius: "50%", display: "inline-block" }} />
                   Acesso seguro
                 </div>
-                <h2 style={{ fontSize: "28px", fontWeight: 700, color: "#fff", letterSpacing: "-0.6px", marginBottom: "6px" }}>Entre na sua conta</h2>
-                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.38)" }}>Enviaremos um código de 6 dígitos para o seu e-mail.</p>
+                <h2 style={{ fontSize: "28px", fontWeight: 700, color: "#111827", letterSpacing: "-0.6px", marginBottom: "6px" }}>Entre na sua conta</h2>
+                <p style={{ fontSize: "14px", color: "#6b7280" }}>Enviaremos um código de 6 dígitos para o seu e-mail.</p>
               </div>
 
-              <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", marginBottom: "28px" }} />
+              <div style={{ height: "1px", background: "#e5e7eb", marginBottom: "28px" }} />
 
               <form onSubmit={handleSendOtp} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.8px", textTransform: "uppercase" as const, marginBottom: "8px" }}>E-mail</label>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.8px", textTransform: "uppercase" as const, marginBottom: "8px" }}>E-mail</label>
                   <div style={{ position: "relative" }}>
-                    <Mail size={15} style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: emailFocused ? "#60A5FA" : "rgba(255,255,255,0.25)", transition: "color 0.15s" }} />
+                    <Mail size={15} style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: emailFocused ? "#3b82f6" : "#9ca3af", transition: "color 0.15s" }} />
                     <input
                       type="email"
                       required
@@ -316,16 +315,16 @@ export default function Auth() {
               </form>
 
               {/* Trust badges */}
-              <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+              <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px solid #e5e7eb" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px" }}>
                   {[
                     { icon: Shield,    label: "Dados seguros" },
                     { icon: Cloud,     label: "Cloud hospedado" },
                     { icon: RefreshCw, label: "Sempre atualizado" },
                   ].map(({ icon: Icon, label }) => (
-                    <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", fontSize: "11px", color: "rgba(255,255,255,0.25)", textAlign: "center" as const }}>
-                      <div style={{ width: "34px", height: "34px", background: "rgba(37,99,235,0.12)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Icon size={15} style={{ color: "#3B82F6" }} />
+                    <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", fontSize: "11px", color: "#6b7280", textAlign: "center" as const }}>
+                      <div style={{ width: "34px", height: "34px", background: "#eff6ff", border: "1px solid #dbeafe", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Icon size={15} style={{ color: "#2563eb" }} />
                       </div>
                       {label}
                     </div>
@@ -341,23 +340,23 @@ export default function Auth() {
 
               {/* Ícone */}
               <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
-                <div style={{ width: "68px", height: "68px", background: "rgba(37,99,235,0.15)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px" }}>
+                <div style={{ width: "68px", height: "68px", background: "#eff6ff", border: "1px solid #dbeafe", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px" }}>
                   📬
                 </div>
               </div>
 
               {/* Título */}
               <div style={{ textAlign: "center", marginBottom: "22px" }}>
-                <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#fff", letterSpacing: "-0.5px", marginBottom: "10px" }}>Verifique seu e-mail</h2>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", lineHeight: 1.6, marginBottom: "10px" }}>
+                <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#111827", letterSpacing: "-0.5px", marginBottom: "10px" }}>Verifique seu e-mail</h2>
+                <p style={{ fontSize: "13px", color: "#6b7280", lineHeight: 1.6, marginBottom: "10px" }}>
                   Enviamos um código de 6 dígitos para
                 </p>
-                <div style={{ display: "inline-block", background: "rgba(37,99,235,0.15)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: "8px", padding: "6px 16px", fontSize: "13px", fontWeight: 700, color: "#60A5FA", wordBreak: "break-all" }}>
+                <div style={{ display: "inline-block", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "6px 16px", fontSize: "13px", fontWeight: 700, color: "#1d4ed8", wordBreak: "break-all" }}>
                   {email}
                 </div>
               </div>
 
-              <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", marginBottom: "22px" }} />
+              <div style={{ height: "1px", background: "#e5e7eb", marginBottom: "22px" }} />
 
               <form onSubmit={handleVerifyOtp}>
                 {/* 6 inputs OTP */}
@@ -378,12 +377,12 @@ export default function Auth() {
                       style={{
                         width: "52px",
                         height: "60px",
-                        background: d ? "rgba(37,99,235,0.14)" : "rgba(255,255,255,0.05)",
-                        border: `1.5px solid ${d ? "rgba(59,130,246,0.5)" : "rgba(255,255,255,0.10)"}`,
+                        background: d ? "#eff6ff" : "#f9fafb",
+                        border: `1.5px solid ${d ? "#bfdbfe" : "#e5e7eb"}`,
                         borderRadius: "12px",
                         fontSize: "26px",
                         fontWeight: 700,
-                        color: "#fff",
+                        color: d ? "#1d4ed8" : "#111827",
                         textAlign: "center" as const,
                         outline: "none",
                         transition: "all 0.15s",
@@ -404,9 +403,10 @@ export default function Auth() {
                     width: "100%", height: "52px",
                     background: digits.join("").length === 6
                       ? "linear-gradient(135deg,#2563EB,#1D4ED8)"
-                      : "rgba(37,99,235,0.25)",
+                      : "#e5e7eb",
                     border: "none", borderRadius: "12px",
-                    fontSize: "15px", fontWeight: 700, color: "#fff",
+                    fontSize: "15px", fontWeight: 700,
+                    color: digits.join("").length === 6 ? "#fff" : "#9ca3af",
                     cursor: submitting || digits.join("").length < 6 ? "not-allowed" : "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
                     boxShadow: digits.join("").length === 6 ? "0 4px 24px rgba(37,99,235,0.4)" : "none",
@@ -422,18 +422,18 @@ export default function Auth() {
               </form>
 
               {/* Links secundários */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px", paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px", paddingTop: "20px", borderTop: "1px solid #e5e7eb" }}>
                 <button
                   onClick={() => { setTela("email"); setDigits(Array(6).fill("")); }}
                   disabled={submitting}
-                  style={{ background: "none", border: "none", color: "#60A5FA", fontSize: "13px", cursor: "pointer", fontWeight: 500, padding: 0, display: "flex", alignItems: "center", gap: "5px", opacity: submitting ? 0.5 : 1, transition: "opacity 0.15s" }}
+                  style={{ background: "none", border: "none", color: "#1d4ed8", fontSize: "13px", cursor: "pointer", fontWeight: 500, padding: 0, display: "flex", alignItems: "center", gap: "5px", opacity: submitting ? 0.5 : 1, transition: "opacity 0.15s" }}
                 >
                   ← Alterar e-mail
                 </button>
                 <button
                   onClick={handleReenviar}
                   disabled={submitting}
-                  style={{ background: "none", border: "none", color: "#60A5FA", fontSize: "13px", cursor: "pointer", fontWeight: 500, padding: 0, display: "flex", alignItems: "center", gap: "5px", opacity: submitting ? 0.5 : 1, transition: "opacity 0.15s" }}
+                  style={{ background: "none", border: "none", color: "#1d4ed8", fontSize: "13px", cursor: "pointer", fontWeight: 500, padding: 0, display: "flex", alignItems: "center", gap: "5px", opacity: submitting ? 0.5 : 1, transition: "opacity 0.15s" }}
                 >
                   <RefreshCw size={12} style={{ animation: submitting ? "spin-loader 1s linear infinite" : "none" }} />
                   Reenviar
