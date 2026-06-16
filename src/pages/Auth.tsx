@@ -62,6 +62,25 @@ export default function Auth() {
   const handleSendOtp = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+
+    const { data: usuarios, error: dbError } = await supabase
+      .from("usuarios")
+      .select("ativo")
+      .eq("email", email)
+      .limit(1);
+
+    if (dbError || !usuarios || usuarios.length === 0) {
+      setSubmitting(false);
+      toast({ title: "E-mail não autorizado. Entre em contato com o administrador.", variant: "destructive" });
+      return;
+    }
+
+    if (!usuarios[0].ativo) {
+      setSubmitting(false);
+      toast({ title: "Usuário inativo. Entre em contato com o administrador.", variant: "destructive" });
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: false },
