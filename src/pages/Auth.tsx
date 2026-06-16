@@ -71,13 +71,32 @@ export default function Auth() {
   const handleSendOtp = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+
+    const { data: usuarioData } = await supabase
+      .from("usuarios")
+      .select("ativo")
+      .eq("email", email.trim().toLowerCase())
+      .maybeSingle();
+
+    if (!usuarioData) {
+      toast({ title: "E-mail não autorizado.", description: "Entre em contato com o administrador.", variant: "destructive" });
+      setSubmitting(false);
+      return;
+    }
+
+    if (!usuarioData.ativo) {
+      toast({ title: "Usuário inativo.", description: "Entre em contato com o administrador.", variant: "destructive" });
+      setSubmitting(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: email.trim().toLowerCase(),
       options: { shouldCreateUser: false },
     });
     setSubmitting(false);
     if (error) {
-      toast({ title: "E-mail não autorizado. Entre em contato com o administrador.", variant: "destructive" });
+      toast({ title: "Erro ao enviar código", description: error.message, variant: "destructive" });
       return;
     }
     setDigits(Array(6).fill(""));
