@@ -20,7 +20,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchPerfil = async (userId: string | null) => {
     if (!userId) { setPerfil(null); return; }
-    const { data } = await supabase.from("usuarios").select("perfil").eq("id", userId).single();
+    const { data } = await supabase.from("usuarios").select("perfil, ativo").eq("id", userId).single();
+    if (data?.ativo === false) {
+      localStorage.setItem("auth_error", "Usuário inativo. Entre em contato com o administrador.");
+      await supabase.auth.signOut();
+      return;
+    }
     setPerfil(data?.perfil ?? null);
   };
 

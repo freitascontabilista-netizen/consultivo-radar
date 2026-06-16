@@ -22,6 +22,15 @@ export default function Auth() {
 
   useEffect(() => { document.title = "Entrar | Consultivo Radar"; }, []);
 
+  // Exibe mensagem de erro persistida pelo AuthContext (ex: usuário inativo)
+  useEffect(() => {
+    const msg = localStorage.getItem("auth_error");
+    if (msg) {
+      localStorage.removeItem("auth_error");
+      toast({ title: msg, variant: "destructive" });
+    }
+  }, [toast]);
+
   // auto-focus primeiro dígito ao entrar na tela OTP
   useEffect(() => {
     if (tela === "otp") setTimeout(() => otpRefs.current[0]?.focus(), 60);
@@ -62,32 +71,13 @@ export default function Auth() {
   const handleSendOtp = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-
-    const { data: usuarios, error: dbError } = await supabase
-      .from("usuarios")
-      .select("ativo")
-      .eq("email", email)
-      .limit(1);
-
-    if (dbError || !usuarios || usuarios.length === 0) {
-      setSubmitting(false);
-      toast({ title: "E-mail não autorizado. Entre em contato com o administrador.", variant: "destructive" });
-      return;
-    }
-
-    if (!usuarios[0].ativo) {
-      setSubmitting(false);
-      toast({ title: "Usuário inativo. Entre em contato com o administrador.", variant: "destructive" });
-      return;
-    }
-
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: false },
     });
     setSubmitting(false);
     if (error) {
-      toast({ title: "Erro ao enviar código", description: error.message, variant: "destructive" });
+      toast({ title: "E-mail não autorizado. Entre em contato com o administrador.", variant: "destructive" });
       return;
     }
     setDigits(Array(6).fill(""));
