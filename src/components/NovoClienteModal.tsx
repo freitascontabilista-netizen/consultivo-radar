@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,25 @@ export const UFS = [
 export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [segmentosList, setSegmentosList] = useState<string[]>(SEGMENTOS);
+  const [regimesList, setRegimesList] = useState<string[]>(REGIMES);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("listas_config")
+        .select("tipo, valor")
+        .in("tipo", ["segmento", "regime_tributario"])
+        .eq("ativo", true)
+        .order("ordem");
+      if (data && data.length > 0) {
+        const segs = data.filter((d: any) => d.tipo === "segmento").map((d: any) => d.valor);
+        const regs = data.filter((d: any) => d.tipo === "regime_tributario").map((d: any) => d.valor);
+        if (segs.length > 0) setSegmentosList(segs);
+        if (regs.length > 0) setRegimesList(regs);
+      }
+    })();
+  }, []);
   const [razaoSocial, setRazaoSocial] = useState("");
   const [nomeFantasia, setNomeFantasia] = useState("");
   const [cnpj, setCnpj] = useState("");
@@ -120,7 +139,7 @@ export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
               <Select value={segmento} onValueChange={setSegmento}>
                 <SelectTrigger id="segmento"><SelectValue placeholder="Selecione o segmento..." /></SelectTrigger>
                 <SelectContent>
-                  {SEGMENTOS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {segmentosList.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -138,7 +157,7 @@ export function NovoClienteModal({ open, onOpenChange, onSaved }: Props) {
               <Select value={regime} onValueChange={setRegime}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {REGIMES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  {regimesList.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

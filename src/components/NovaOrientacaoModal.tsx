@@ -26,7 +26,7 @@ interface Props {
 import { TIPOS_ORIENTACAO } from "@/lib/constants";
 export { TIPOS_ORIENTACAO };
 
-const CANAIS = ["WhatsApp", "E-mail", "Telefone", "Reunião presencial", "Videochamada", "Outro"];
+const CANAIS_FALLBACK = ["WhatsApp", "E-mail", "Telefone", "Reunião presencial", "Videochamada", "Outro"];
 
 export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, onSaved }: Props) {
   const { toast } = useToast();
@@ -34,12 +34,23 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
   const [loadingIA, setLoadingIA] = useState(false);
   const [clientes, setClientes] = useState<ClienteOpt[]>([]);
   const [loadingClientes, setLoadingClientes] = useState(false);
+  const [canais, setCanais] = useState<string[]>(CANAIS_FALLBACK);
   const [clienteId, setClienteId] = useState<string>("");
   const [tipo, setTipo] = useState("fiscal");
   const [canal, setCanal] = useState("WhatsApp");
   const [assunto, setAssunto] = useState("");
   const [resumo, setResumo] = useState("");
   const [proximoPasso, setProximoPasso] = useState("");
+
+  const fetchCanais = async () => {
+    const { data } = await supabase
+      .from("listas_config")
+      .select("valor")
+      .eq("tipo", "tipo_interacao")
+      .eq("ativo", true)
+      .order("ordem");
+    if (data && data.length > 0) setCanais(data.map((d: any) => d.valor));
+  };
 
   const fetchClientes = async () => {
     setLoadingClientes(true);
@@ -64,7 +75,7 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
   };
 
   // Carrega na montagem do componente (eager load)
-  useEffect(() => { fetchClientes(); }, []);
+  useEffect(() => { fetchClientes(); fetchCanais(); }, []);
 
   // Retry se o modal abrir e a lista ainda estiver vazia
   useEffect(() => {
@@ -187,7 +198,7 @@ export function NovaOrientacaoModal({ open, onOpenChange, clienteIdPreSelected, 
               <Select value={canal} onValueChange={setCanal}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CANAIS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  {canais.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

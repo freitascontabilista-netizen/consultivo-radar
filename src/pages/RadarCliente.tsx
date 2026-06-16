@@ -101,6 +101,24 @@ export default function RadarCliente() {
     observacoes: "",
   });
 
+  const [segmentosList, setSegmentosList] = useState<string[]>([]);
+  const [regimesList, setRegimesList] = useState<string[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("listas_config")
+        .select("tipo, valor")
+        .in("tipo", ["segmento", "regime_tributario"])
+        .eq("ativo", true)
+        .order("ordem");
+      if (data) {
+        setSegmentosList(data.filter((d: any) => d.tipo === "segmento").map((d: any) => d.valor));
+        setRegimesList(data.filter((d: any) => d.tipo === "regime_tributario").map((d: any) => d.valor));
+      }
+    })();
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     let cli = await supabase.from("radar_consultivo").select("*").eq("id", clienteId).maybeSingle();
@@ -617,11 +635,7 @@ export default function RadarCliente() {
                   <label className={labelClass}>Segmento</label>
                   <select className={inputClass} value={editForm.segmento} onChange={e => setEditForm(f => ({ ...f, segmento: e.target.value }))}>
                     <option value="">Selecione o segmento...</option>
-                    <option>Serviço</option>
-                    <option>Comércio</option>
-                    <option>Indústria</option>
-                    <option>Comércio e Serviço</option>
-                    <option>Comércio, Serviços e Indústria</option>
+                    {segmentosList.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
@@ -639,11 +653,7 @@ export default function RadarCliente() {
                   <label className={labelClass}>Regime Tributário</label>
                   <select className={inputClass} value={editForm.regime_tributario} onChange={e => setEditForm(f => ({ ...f, regime_tributario: e.target.value }))}>
                     <option value="">Selecione</option>
-                    <option>MEI</option>
-                    <option>Simples Nacional</option>
-                    <option>Lucro Presumido</option>
-                    <option>Lucro Real</option>
-                    <option>Outro</option>
+                    {regimesList.map(r => <option key={r}>{r}</option>)}
                   </select>
                 </div>
                 <div>
